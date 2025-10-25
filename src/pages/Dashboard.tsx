@@ -1,32 +1,32 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { LogOut, MessageSquare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Navigation from "@/components/Navigation";
 import AIChat from "@/components/AIChat";
+import { LogOut, MessageSquare, FolderKanban } from "lucide-react";
+import { useProjects } from "@/hooks/useProjects";
+import { ProjectCard } from "@/components/ProjectCard";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showChat, setShowChat] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [user, setUser] = useState<any>(null);
+  const [showChat, setShowChat] = useState(false);
+  const { data: projects } = useProjects();
+  
+  const recentProjects = projects?.slice(0, 3);
 
   useEffect(() => {
-    // Check authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
       } else {
         setUser(session.user);
       }
-      setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (!session) {
         navigate("/auth");
       } else {
@@ -39,61 +39,108 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+    navigate("/auth");
   };
 
-  if (loading) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-copper"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Aligno Dashboard</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
-          <p className="text-muted-foreground">
-            {user?.email}
-          </p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="p-6 border rounded-lg bg-card hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold mb-2">Projects</h3>
-            <p className="text-muted-foreground mb-4">Manage your projects and tasks</p>
-            <Button>View Projects</Button>
-          </div>
-
-          <div className="p-6 border rounded-lg bg-card hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold mb-2">Team</h3>
-            <p className="text-muted-foreground mb-4">Collaborate with your team members</p>
-            <Button>View Team</Button>
-          </div>
-
-          <div className="p-6 border rounded-lg bg-card hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold mb-2">AI Assistant</h3>
-            <p className="text-muted-foreground mb-4">Get help with project management</p>
-            <Button onClick={() => setShowChat(true)}>
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Open Chat
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      <main className="container mx-auto px-6 py-24">
+        <div className="space-y-12">
+          {/* Welcome Section */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+                Welcome back!
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                {user?.email}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="hover:border-copper/30 transition-smooth"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
             </Button>
           </div>
+
+          {/* Quick Actions */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="hover:border-copper/30 transition-smooth">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-copper" />
+                  AI Assistant
+                </CardTitle>
+                <CardDescription>
+                  Get help with project planning and management
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowChat(true)}
+                >
+                  Open AI Chat
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:border-copper/30 transition-smooth">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderKanban className="w-5 h-5 text-copper" />
+                  Projects
+                </CardTitle>
+                <CardDescription>
+                  {projects?.length || 0} active projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/projects')}
+                >
+                  View All Projects
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Projects Section */}
+          {recentProjects && recentProjects.length > 0 && (
+            <div className="mt-12">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Recent Projects</h2>
+                <Button variant="ghost" onClick={() => navigate('/projects')}>
+                  View All
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recentProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
