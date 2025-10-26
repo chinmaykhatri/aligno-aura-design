@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export interface Project {
   id: string;
@@ -28,6 +29,40 @@ export interface ProjectMember {
 }
 
 export const useProjects = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_members'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["projects"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -73,6 +108,44 @@ export const useProjects = () => {
 };
 
 export const useProject = (id: string | undefined) => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`project-${id}-changes`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["project", id] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_members',
+          filter: `project_id=eq.${id}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["project", id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
+
   return useQuery({
     queryKey: ["project", id],
     queryFn: async () => {
