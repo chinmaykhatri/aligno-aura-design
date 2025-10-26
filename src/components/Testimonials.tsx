@@ -73,7 +73,7 @@ const Testimonials = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h4 className="font-semibold text-foreground text-sm">{testimonial.name}</h4>
+                  <h3 className="font-semibold text-foreground text-sm">{testimonial.name}</h3>
                   <p className="text-xs text-muted-foreground">{testimonial.role}</p>
                 </div>
               </div>

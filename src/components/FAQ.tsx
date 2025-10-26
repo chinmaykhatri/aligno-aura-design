@@ -56,7 +56,7 @@ const FAQ = () => {
                 <AccordionContent className="text-muted-foreground leading-relaxed">
                   {faq.answer}
                   {faq.link && (
-                    <a href="#" className="text-copper hover:text-copper-dark ml-2 text-sm">
+                    <a href="#" className="text-copper hover:text-copper-dark ml-2 text-sm underline">
                       Read more →
                     </a>
                   )}

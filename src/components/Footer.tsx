@@ -95,16 +95,16 @@ const Footer = () => {
               </li>
             </ul>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth">
+              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth" aria-label="Twitter">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth">
+              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth" aria-label="LinkedIn">
                 <Linkedin className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth">
+              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth" aria-label="GitHub">
                 <Github className="w-5 h-5" />
               </a>
-              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth">
+              <a href="#" className="text-muted-foreground hover:text-copper transition-smooth" aria-label="YouTube">
                 <Youtube className="w-5 h-5" />
               </a>
             </div>

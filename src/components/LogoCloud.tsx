@@ -13,7 +13,7 @@ const LogoCloud = () => {
           {partners.map((partner) => (
             <div 
               key={partner}
-              className="text-2xl font-semibold text-foreground/60 hover:text-copper/80 transition-smooth"
+              className="text-2xl font-semibold text-muted-foreground hover:text-copper/80 transition-smooth"
             >
               {partner}
             </div>
