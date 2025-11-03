@@ -40,14 +40,16 @@ const Hero = () => {
           </div>
         </div>
         
-        <div className="mt-20 max-w-6xl mx-auto animate-fade-in" style={{ animationDelay: '0.3s', opacity: 0, animationFillMode: 'forwards' }}>
-          <div className="relative rounded-2xl overflow-hidden border border-copper/20 shadow-2xl glow-copper">
-            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
-            <img 
-              src={heroDashboard} 
-              alt="Aligno Dashboard Preview" 
-              className="w-full h-auto opacity-70 blur-[2px]"
-            />
+          <div className="mt-20 max-w-6xl mx-auto animate-fade-in" style={{ animationDelay: '0.3s', opacity: 0, animationFillMode: 'forwards' }}>
+            <div className="relative rounded-2xl overflow-hidden border border-copper/20 shadow-2xl glow-copper">
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
+              <img 
+                src={heroDashboard} 
+                alt="Aligno Dashboard Preview" 
+                width="1920"
+                height="1080"
+                className="w-full h-auto opacity-70 blur-[2px]"
+              />
             <div className="absolute bottom-6 left-6 right-6 z-20 flex flex-wrap gap-3">
               <div className="px-4 py-2 rounded-lg bg-secondary/80 backdrop-blur-md border border-copper/20 text-sm">
                 List View
