@@ -48,6 +48,7 @@ const Hero = () => {
                 alt="Aligno Dashboard Preview" 
                 width="1920"
                 height="1080"
+                fetchPriority="high"
                 className="w-full h-auto opacity-70 blur-[2px]"
               />
             <div className="absolute bottom-6 left-6 right-6 z-20 flex flex-wrap gap-3">
