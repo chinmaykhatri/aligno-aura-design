@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { analytics } from "@/lib/analytics";
 
 export interface Project {
   id: string;
@@ -235,8 +236,9 @@ export const useCreateProject = () => {
 
       return { previousProjects };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      analytics.trackProjectCreated(data.id, data.name);
       toast({
         title: "Project created",
         description: "Your project has been created successfully.",
@@ -303,6 +305,8 @@ export const useUpdateProject = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      const updatedFields = Object.keys(variables.updates);
+      analytics.trackProjectUpdated(variables.id, updatedFields);
       toast({
         title: "Project updated",
         description: "Your project has been updated successfully.",
@@ -338,8 +342,9 @@ export const useDeleteProject = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, projectId) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      analytics.trackProjectDeleted(projectId);
       toast({
         title: "Project deleted",
         description: "Your project has been deleted successfully.",
@@ -385,6 +390,7 @@ export const useAddProjectMember = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.projectId] });
+      analytics.trackMemberInvited(variables.projectId, variables.role);
       toast({
         title: "Member added",
         description: "Team member has been added successfully.",
@@ -422,6 +428,7 @@ export const useRemoveProjectMember = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.projectId] });
+      analytics.trackMemberRemoved(variables.projectId);
       toast({
         title: "Member removed",
         description: "Team member has been removed successfully.",

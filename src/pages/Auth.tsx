@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import { analytics } from "@/lib/analytics";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -71,6 +72,7 @@ const Auth = () => {
             throw error;
           }
         } else {
+          analytics.trackUserLogin('email');
           toast({
             title: "Welcome back!",
             description: "You have successfully logged in.",
@@ -99,6 +101,7 @@ const Auth = () => {
             throw error;
           }
         } else {
+          analytics.trackUserSignup('email');
           toast({
             title: "Account created!",
             description: "Welcome to Aligno. You can now start using the platform.",
