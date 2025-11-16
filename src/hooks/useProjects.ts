@@ -209,6 +209,32 @@ export const useCreateProject = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async (newProject) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+
+      // Snapshot the previous value
+      const previousProjects = queryClient.getQueryData(["projects"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["projects"], (old: Project[] = []) => [
+        {
+          id: 'temp-' + Date.now(),
+          user_id: '',
+          name: newProject.name,
+          description: newProject.description || null,
+          progress: newProject.progress || 0,
+          status: newProject.status || 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          members: [],
+          memberCount: 1,
+        },
+        ...old,
+      ]);
+
+      return { previousProjects };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast({
@@ -216,7 +242,11 @@ export const useCreateProject = () => {
         description: "Your project has been created successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _newProject, context) => {
+      // Rollback on error
+      if (context?.previousProjects) {
+        queryClient.setQueryData(["projects"], context.previousProjects);
+      }
       toast({
         title: "Error",
         description: error.message,
@@ -248,6 +278,28 @@ export const useUpdateProject = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      await queryClient.cancelQueries({ queryKey: ["project", id] });
+
+      // Snapshot the previous values
+      const previousProjects = queryClient.getQueryData(["projects"]);
+      const previousProject = queryClient.getQueryData(["project", id]);
+
+      // Optimistically update
+      queryClient.setQueryData(["projects"], (old: Project[] = []) =>
+        old.map((project) =>
+          project.id === id ? { ...project, ...updates } : project
+        )
+      );
+
+      queryClient.setQueryData(["project", id], (old: Project | undefined) =>
+        old ? { ...old, ...updates } : old
+      );
+
+      return { previousProjects, previousProject };
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
@@ -256,7 +308,14 @@ export const useUpdateProject = () => {
         description: "Your project has been updated successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables, context) => {
+      // Rollback on error
+      if (context?.previousProjects) {
+        queryClient.setQueryData(["projects"], context.previousProjects);
+      }
+      if (context?.previousProject) {
+        queryClient.setQueryData(["project", variables.id], context.previousProject);
+      }
       toast({
         title: "Error",
         description: error.message,
