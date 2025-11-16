@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { Send, Loader2 } from "lucide-react";
+import { useAIChatTracking, analytics } from "@/hooks/useAnalytics";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +24,9 @@ const AIChat = ({ open, onOpenChange }: AIChatProps) => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Track AI chat session duration
+  useAIChatTracking(open);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -148,6 +152,7 @@ const AIChat = ({ open, onOpenChange }: AIChatProps) => {
     if (!input.trim() || loading) return;
 
     const userMessage = input.trim();
+    analytics.trackAIChatMessageSent(userMessage.length);
     setInput("");
     await streamChat(userMessage);
   };

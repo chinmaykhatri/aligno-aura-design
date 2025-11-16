@@ -8,6 +8,7 @@ import AIChat from "@/components/AIChat";
 import { LogOut, MessageSquare, FolderKanban } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/ProjectCard";
+import { analytics } from "@/lib/analytics";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const Dashboard = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
+    analytics.trackUserLogout();
     await supabase.auth.signOut();
     navigate("/auth");
   };
