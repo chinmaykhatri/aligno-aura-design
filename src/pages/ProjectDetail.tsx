@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import {
   Select,
   SelectContent,
@@ -231,6 +232,9 @@ const ProjectDetail = () => {
                   </Select>
                 </div>
               )}
+
+              {/* Activity Feed */}
+              <ActivityFeed projectId={project.id} compact />
             </div>
 
             {/* Sidebar */}
