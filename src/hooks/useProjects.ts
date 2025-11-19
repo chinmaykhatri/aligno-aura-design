@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { analytics } from "@/lib/analytics";
+import { createActivity } from "@/hooks/useActivities";
 
 export interface Project {
   id: string;
@@ -236,9 +237,18 @@ export const useCreateProject = () => {
 
       return { previousProjects };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       analytics.trackProjectCreated(data.id, data.name);
+      
+      // Create activity
+      await createActivity({
+        user_id: data.user_id,
+        project_id: data.id,
+        activity_type: 'project_created',
+        metadata: { projectName: data.name },
+      });
+      
       toast({
         title: "Project created",
         description: "Your project has been created successfully.",
@@ -302,11 +312,36 @@ export const useUpdateProject = () => {
 
       return { previousProjects, previousProject };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
       const updatedFields = Object.keys(variables.updates);
       analytics.trackProjectUpdated(variables.id, updatedFields);
+      
+      // Create activity based on what was updated
+      if (variables.updates.status) {
+        await createActivity({
+          user_id: data.user_id,
+          project_id: data.id,
+          activity_type: 'project_status_changed',
+          metadata: { newStatus: variables.updates.status, projectName: data.name },
+        });
+      } else if (variables.updates.progress !== undefined) {
+        await createActivity({
+          user_id: data.user_id,
+          project_id: data.id,
+          activity_type: 'project_progress_updated',
+          metadata: { newProgress: variables.updates.progress, projectName: data.name },
+        });
+      } else {
+        await createActivity({
+          user_id: data.user_id,
+          project_id: data.id,
+          activity_type: 'project_updated',
+          metadata: { updatedFields, projectName: data.name },
+        });
+      }
+      
       toast({
         title: "Project updated",
         description: "Your project has been updated successfully.",
@@ -342,9 +377,19 @@ export const useDeleteProject = () => {
 
       if (error) throw error;
     },
-    onSuccess: (_data, projectId) => {
+    onSuccess: async (_data, projectId) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       analytics.trackProjectDeleted(projectId);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await createActivity({
+          user_id: user.id,
+          project_id: projectId,
+          activity_type: 'project_deleted',
+        });
+      }
+      
       toast({
         title: "Project deleted",
         description: "Your project has been deleted successfully.",
@@ -387,10 +432,21 @@ export const useAddProjectMember = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.projectId] });
       analytics.trackMemberInvited(variables.projectId, variables.role);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await createActivity({
+          user_id: user.id,
+          project_id: variables.projectId,
+          activity_type: 'member_added',
+          metadata: { role: variables.role },
+        });
+      }
+      
       toast({
         title: "Member added",
         description: "Team member has been added successfully.",
@@ -425,10 +481,20 @@ export const useRemoveProjectMember = () => {
 
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.projectId] });
       analytics.trackMemberRemoved(variables.projectId);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await createActivity({
+          user_id: user.id,
+          project_id: variables.projectId,
+          activity_type: 'member_removed',
+        });
+      }
+      
       toast({
         title: "Member removed",
         description: "Team member has been removed successfully.",

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import AIChat from "@/components/AIChat";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { LogOut, MessageSquare, FolderKanban } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -143,6 +144,11 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Activity Feed Section */}
+          <div className="mt-12">
+            <ActivityFeed compact />
+          </div>
         </div>
       </main>
 

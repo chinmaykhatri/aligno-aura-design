@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at: string
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
@@ -160,7 +195,15 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      activity_type:
+        | "project_created"
+        | "project_updated"
+        | "project_deleted"
+        | "project_status_changed"
+        | "project_progress_updated"
+        | "member_added"
+        | "member_removed"
+        | "member_role_changed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -287,6 +330,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_type: [
+        "project_created",
+        "project_updated",
+        "project_deleted",
+        "project_status_changed",
+        "project_progress_updated",
+        "member_added",
+        "member_removed",
+        "member_role_changed",
+      ],
+    },
   },
 } as const
