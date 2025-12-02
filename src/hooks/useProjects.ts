@@ -4,6 +4,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { analytics } from "@/lib/analytics";
 import { createActivity } from "@/hooks/useActivities";
+import { 
+  sendStatusChangeNotification, 
+  sendProgressMilestoneNotification, 
+  sendMemberInvitationNotification,
+  isProgressMilestone 
+} from "@/lib/emailNotifications";
 
 export interface Project {
   id: string;
@@ -312,11 +318,20 @@ export const useUpdateProject = () => {
 
       return { previousProjects, previousProject };
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: async (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
       const updatedFields = Object.keys(variables.updates);
       analytics.trackProjectUpdated(variables.id, updatedFields);
+      
+      // Get user email for notifications
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", data.user_id)
+        .single();
       
       // Create activity based on what was updated
       if (variables.updates.status) {
@@ -326,6 +341,19 @@ export const useUpdateProject = () => {
           activity_type: 'project_status_changed',
           metadata: { newStatus: variables.updates.status, projectName: data.name },
         });
+        
+        // Send status change email to project owner
+        if (userEmail) {
+          const oldProject = context?.previousProject as Project | undefined;
+          sendStatusChangeNotification(
+            userEmail,
+            profile?.full_name || undefined,
+            data.name,
+            oldProject?.status || 'unknown',
+            variables.updates.status,
+            profile?.full_name || undefined
+          );
+        }
       } else if (variables.updates.progress !== undefined) {
         await createActivity({
           user_id: data.user_id,
@@ -333,6 +361,18 @@ export const useUpdateProject = () => {
           activity_type: 'project_progress_updated',
           metadata: { newProgress: variables.updates.progress, projectName: data.name },
         });
+        
+        // Send milestone email if progress hit a milestone
+        const oldProject = context?.previousProject as Project | undefined;
+        const oldProgress = oldProject?.progress || 0;
+        if (userEmail && isProgressMilestone(oldProgress, variables.updates.progress)) {
+          sendProgressMilestoneNotification(
+            userEmail,
+            profile?.full_name || undefined,
+            data.name,
+            variables.updates.progress
+          );
+        }
       } else {
         await createActivity({
           user_id: data.user_id,
@@ -445,6 +485,32 @@ export const useAddProjectMember = () => {
           activity_type: 'member_added',
           metadata: { role: variables.role },
         });
+        
+        // Get project name and invitee info for email notification
+        const { data: project } = await supabase
+          .from("projects")
+          .select("name, description")
+          .eq("id", variables.projectId)
+          .single();
+        
+        const { data: inviteeProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", variables.userId)
+          .single();
+        
+        const { data: inviterProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .single();
+        
+        // Get invitee email from auth (we'll use their user_id profile for now)
+        // Note: In production, you'd want to store email in profiles or use a different lookup
+        if (project) {
+          // For now, we log the invitation - in production you'd get the actual email
+          console.log(`Member invitation: ${variables.userId} invited to ${project.name} as ${variables.role}`);
+        }
       }
       
       toast({
