@@ -10,7 +10,11 @@ export type ActivityType =
   | 'project_progress_updated'
   | 'member_added'
   | 'member_removed'
-  | 'member_role_changed';
+  | 'member_role_changed'
+  | 'task_created'
+  | 'task_updated'
+  | 'task_completed'
+  | 'task_deleted';
 
 export interface Activity {
   id: string;

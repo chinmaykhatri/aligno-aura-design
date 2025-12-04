@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { TaskList } from "@/components/TaskList";
 import {
   Select,
   SelectContent,
@@ -232,6 +233,9 @@ const ProjectDetail = () => {
                   </Select>
                 </div>
               )}
+
+              {/* Tasks Section */}
+              <TaskList projectId={project.id} isOwner={isOwner} />
 
               {/* Activity Feed */}
               <ActivityFeed projectId={project.id} compact />
