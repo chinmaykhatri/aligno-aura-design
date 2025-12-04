@@ -20,6 +20,10 @@ const activityTypeLabels: Record<ActivityType, { label: string; color: string }>
   member_added: { label: "Member Added", color: "bg-cyan-500" },
   member_removed: { label: "Member Removed", color: "bg-orange-500" },
   member_role_changed: { label: "Role Changed", color: "bg-pink-500" },
+  task_created: { label: "Task Created", color: "bg-emerald-500" },
+  task_updated: { label: "Task Updated", color: "bg-indigo-500" },
+  task_completed: { label: "Task Completed", color: "bg-teal-500" },
+  task_deleted: { label: "Task Deleted", color: "bg-rose-500" },
 };
 
 interface ActivityFeedProps {
@@ -66,6 +70,14 @@ export const ActivityFeed = ({ projectId, compact = false }: ActivityFeedProps) 
         return `${userName} removed a member from ${projectName}`;
       case "member_role_changed":
         return `${userName} changed a member's role in ${projectName}`;
+      case "task_created":
+        return `${userName} created task "${metadata.task_title}" in ${projectName}`;
+      case "task_updated":
+        return `${userName} updated task "${metadata.task_title}" in ${projectName}`;
+      case "task_completed":
+        return `${userName} completed task "${metadata.task_title}" in ${projectName}`;
+      case "task_deleted":
+        return `${userName} deleted task "${metadata.task_title}" from ${projectName}`;
       default:
         return `${userName} performed an action in ${projectName}`;
     }
