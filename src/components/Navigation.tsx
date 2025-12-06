@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, FolderKanban, Activity } from "lucide-react";
+import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity"].some(route => 
+  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar"].some(route => 
     location.pathname.startsWith(route)
   );
 
@@ -79,6 +79,17 @@ const Navigation = () => {
             >
               <Activity className="w-4 h-4" />
               Activity
+            </Link>
+            <Link 
+              to="/calendar" 
+              className={`text-sm transition-smooth flex items-center gap-2 ${
+                location.pathname === "/calendar" 
+                  ? "text-copper font-medium" 
+                  : "text-muted-foreground hover:text-copper"
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Calendar
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
