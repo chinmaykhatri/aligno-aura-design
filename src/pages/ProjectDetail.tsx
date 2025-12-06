@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Slider } from "@/components/ui/slider";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TaskList } from "@/components/TaskList";
+import { GoalList } from "@/components/GoalList";
 import {
   Select,
   SelectContent,
@@ -233,6 +234,9 @@ const ProjectDetail = () => {
                   </Select>
                 </div>
               )}
+
+              {/* Goals Section */}
+              <GoalList projectId={project.id} />
 
               {/* Tasks Section */}
               <TaskList projectId={project.id} isOwner={isOwner} />

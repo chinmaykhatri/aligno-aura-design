@@ -14,7 +14,11 @@ export type ActivityType =
   | 'task_created'
   | 'task_updated'
   | 'task_completed'
-  | 'task_deleted';
+  | 'task_deleted'
+  | 'goal_created'
+  | 'goal_updated'
+  | 'goal_completed'
+  | 'milestone_completed';
 
 export interface Activity {
   id: string;
