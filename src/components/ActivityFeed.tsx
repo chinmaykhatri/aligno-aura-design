@@ -24,6 +24,10 @@ const activityTypeLabels: Record<ActivityType, { label: string; color: string }>
   task_updated: { label: "Task Updated", color: "bg-indigo-500" },
   task_completed: { label: "Task Completed", color: "bg-teal-500" },
   task_deleted: { label: "Task Deleted", color: "bg-rose-500" },
+  goal_created: { label: "Goal Created", color: "bg-amber-500" },
+  goal_updated: { label: "Goal Updated", color: "bg-lime-500" },
+  goal_completed: { label: "Goal Completed", color: "bg-emerald-600" },
+  milestone_completed: { label: "Milestone Completed", color: "bg-sky-500" },
 };
 
 interface ActivityFeedProps {
@@ -78,6 +82,14 @@ export const ActivityFeed = ({ projectId, compact = false }: ActivityFeedProps) 
         return `${userName} completed task "${metadata.task_title}" in ${projectName}`;
       case "task_deleted":
         return `${userName} deleted task "${metadata.task_title}" from ${projectName}`;
+      case "goal_created":
+        return `${userName} created goal "${metadata.goal_title}" in ${projectName}`;
+      case "goal_updated":
+        return `${userName} updated goal "${metadata.goal_title}" in ${projectName}`;
+      case "goal_completed":
+        return `${userName} completed goal "${metadata.goal_title}" in ${projectName}`;
+      case "milestone_completed":
+        return `${userName} completed milestone "${metadata.milestone_title}" in ${projectName}`;
       default:
         return `${userName} performed an action in ${projectName}`;
     }
