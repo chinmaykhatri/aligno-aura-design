@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Activity from "./pages/Activity";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
               <Route path="/activity" element={<Activity />} />
+              <Route path="/calendar" element={<Calendar />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
