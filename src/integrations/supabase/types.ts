@@ -334,6 +334,14 @@ export type Database = {
         Args: { project_id: string; user_id: string }
         Returns: boolean
       }
+      log_activity: {
+        Args: {
+          p_activity_type: Database["public"]["Enums"]["activity_type"]
+          p_metadata?: Json
+          p_project_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       activity_type:
