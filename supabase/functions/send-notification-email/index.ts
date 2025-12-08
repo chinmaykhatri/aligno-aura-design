@@ -7,6 +7,45 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 10; // Max 10 emails per minute per IP
+const MAX_REQUESTS_PER_EMAIL = 5; // Max 5 emails per minute to same recipient
+
+// In-memory rate limit store (resets on function cold start)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function getClientIP(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+         req.headers.get("x-real-ip") || 
+         "unknown";
+}
+
+function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(key);
+
+  // Clean up expired entries periodically
+  if (rateLimitStore.size > 1000) {
+    for (const [k, v] of rateLimitStore.entries()) {
+      if (v.resetTime < now) rateLimitStore.delete(k);
+    }
+  }
+
+  if (!record || record.resetTime < now) {
+    // New window
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: maxRequests - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (record.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetIn: record.resetTime - now };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetTime - now };
+}
+
 type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest";
 
 interface NotificationRequest {
@@ -173,6 +212,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const clientIP = getClientIP(req);
+
+  // Check IP-based rate limit first
+  const ipRateLimit = checkRateLimit(`ip:${clientIP}`, MAX_REQUESTS_PER_WINDOW);
+  if (!ipRateLimit.allowed) {
+    console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: "Rate limit exceeded. Please try again later.",
+        retryAfter: Math.ceil(ipRateLimit.resetIn / 1000)
+      }),
+      { 
+        status: 429, 
+        headers: { 
+          "Content-Type": "application/json", 
+          "Retry-After": String(Math.ceil(ipRateLimit.resetIn / 1000)),
+          ...corsHeaders 
+        } 
+      }
+    );
+  }
+
   try {
     const body = await req.json();
     const validation = validateRequest(body);
@@ -187,7 +249,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const { type, recipientEmail, recipientName, data } = validation.data;
 
-    console.log(`Sending ${type} notification to ${recipientEmail}`);
+    // Check recipient-based rate limit to prevent spam to same email
+    const emailRateLimit = checkRateLimit(`email:${recipientEmail.toLowerCase()}`, MAX_REQUESTS_PER_EMAIL);
+    if (!emailRateLimit.allowed) {
+      console.warn(`Rate limit exceeded for recipient: ${recipientEmail}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Too many emails sent to this address. Please try again later.",
+          retryAfter: Math.ceil(emailRateLimit.resetIn / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": String(Math.ceil(emailRateLimit.resetIn / 1000)),
+            ...corsHeaders 
+          } 
+        }
+      );
+    }
+
+    console.log(`Sending ${type} notification to ${recipientEmail} from IP ${clientIP}`);
 
     const { subject, html } = getEmailContent(type, data, recipientName);
 
@@ -202,7 +285,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-RateLimit-Remaining": String(Math.min(ipRateLimit.remaining, emailRateLimit.remaining)),
+        ...corsHeaders 
+      },
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
