@@ -10,6 +10,7 @@ import { MessageSquare, Send, MoreVertical, Trash2, Loader2, Paperclip, X, FileT
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ImageLightbox from '@/components/ImageLightbox';
 
 interface ProjectChatProps {
   projectId: string;
@@ -22,6 +23,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [message, setMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -137,13 +139,16 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
     if (isImageType(msg.attachment_type)) {
       return (
-        <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+        <button
+          onClick={() => setLightboxImage({ src: msg.attachment_url!, alt: msg.attachment_name || 'Image' })}
+          className="block mt-2 cursor-zoom-in"
+        >
           <img
             src={msg.attachment_url}
             alt={msg.attachment_name || 'Attachment'}
             className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border/50 hover:opacity-90 transition-opacity"
           />
-        </a>
+        </button>
       );
     }
 
@@ -315,6 +320,15 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
           </Button>
         </form>
       </CardContent>
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <ImageLightbox
+          src={lightboxImage.src}
+          alt={lightboxImage.alt}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
     </Card>
   );
 };
