@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useProjectMessages, useSendMessage, useDeleteMessage, ProjectMessage } from '@/hooks/useProjectMessages';
+import { useProjectMessages, useSendMessage, useDeleteMessage, useUploadAttachment, ProjectMessage } from '@/hooks/useProjectMessages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MessageSquare, Send, MoreVertical, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, MoreVertical, Trash2, Loader2, Paperclip, X, FileText, Image as ImageIcon, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,15 +15,21 @@ interface ProjectChatProps {
   projectId: string;
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
 const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [message, setMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: messages, isLoading } = useProjectMessages(projectId);
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage();
+  const uploadAttachment = useUploadAttachment();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -37,13 +43,61 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
     }
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim()) return;
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Maximum file size is 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Only images, PDFs, and documents are allowed',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
-      await sendMessage.mutateAsync({ projectId, content: message });
+      const attachment = await uploadAttachment.mutateAsync({ projectId, file });
+      setPendingAttachment(attachment);
+      toast({
+        title: 'File uploaded',
+        description: 'Ready to send with your message',
+      });
+    } catch (error) {
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload file',
+        variant: 'destructive',
+      });
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() && !pendingAttachment) return;
+
+    try {
+      await sendMessage.mutateAsync({
+        projectId,
+        content: message || (pendingAttachment ? `Shared: ${pendingAttachment.name}` : ''),
+        attachment: pendingAttachment || undefined,
+      });
       setMessage('');
+      setPendingAttachment(null);
     } catch (error) {
       toast({
         title: 'Error',
@@ -72,6 +126,39 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const getInitials = (name: string | null) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const isImageType = (type: string | null | undefined) => {
+    return type?.startsWith('image/');
+  };
+
+  const renderAttachment = (msg: ProjectMessage) => {
+    if (!msg.attachment_url) return null;
+
+    if (isImageType(msg.attachment_type)) {
+      return (
+        <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+          <img
+            src={msg.attachment_url}
+            alt={msg.attachment_name || 'Attachment'}
+            className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border/50 hover:opacity-90 transition-opacity"
+          />
+        </a>
+      );
+    }
+
+    return (
+      <a
+        href={msg.attachment_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-background/50 border border-border/50 hover:bg-background/80 transition-colors max-w-[200px]"
+      >
+        <FileText className="h-4 w-4 shrink-0 text-primary" />
+        <span className="text-xs truncate">{msg.attachment_name}</span>
+        <Download className="h-3 w-3 shrink-0 text-muted-foreground" />
+      </a>
+    );
   };
 
   const renderMessage = (msg: ProjectMessage) => {
@@ -109,6 +196,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
               }`}
             >
               {msg.content}
+              {renderAttachment(msg)}
             </div>
 
             {isOwn && (
@@ -166,7 +254,47 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
           )}
         </ScrollArea>
 
+        {/* Pending attachment preview */}
+        {pendingAttachment && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+            {isImageType(pendingAttachment.type) ? (
+              <ImageIcon className="h-4 w-4 text-primary" />
+            ) : (
+              <FileText className="h-4 w-4 text-primary" />
+            )}
+            <span className="text-sm flex-1 truncate">{pendingAttachment.name}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setPendingAttachment(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_TYPES.join(',')}
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadAttachment.isPending}
+          >
+            {uploadAttachment.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </Button>
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -177,7 +305,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
           <Button
             type="submit"
             size="icon"
-            disabled={!message.trim() || sendMessage.isPending}
+            disabled={(!message.trim() && !pendingAttachment) || sendMessage.isPending}
           >
             {sendMessage.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

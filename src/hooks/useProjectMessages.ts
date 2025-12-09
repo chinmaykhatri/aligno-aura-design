@@ -8,6 +8,9 @@ export interface ProjectMessage {
   user_id: string;
   content: string;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
   profile?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -77,11 +80,21 @@ export const useProjectMessages = (projectId: string | undefined) => {
   return query;
 };
 
+interface SendMessageParams {
+  projectId: string;
+  content: string;
+  attachment?: {
+    url: string;
+    name: string;
+    type: string;
+  };
+}
+
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ projectId, content }: { projectId: string; content: string }) => {
+    mutationFn: async ({ projectId, content, attachment }: SendMessageParams) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -91,6 +104,9 @@ export const useSendMessage = () => {
           project_id: projectId,
           user_id: user.id,
           content: content.trim(),
+          attachment_url: attachment?.url || null,
+          attachment_name: attachment?.name || null,
+          attachment_type: attachment?.type || null,
         })
         .select()
         .single();
@@ -119,6 +135,35 @@ export const useDeleteMessage = () => {
     },
     onSuccess: (variables) => {
       queryClient.invalidateQueries({ queryKey: ['project-messages', variables.projectId] });
+    },
+  });
+};
+
+export const useUploadAttachment = () => {
+  return useMutation({
+    mutationFn: async ({ projectId, file }: { projectId: string; file: File }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${projectId}/${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      return {
+        url: publicUrl,
+        name: file.name,
+        type: file.type,
+      };
     },
   });
 };
