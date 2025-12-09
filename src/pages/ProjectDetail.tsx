@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TaskList } from "@/components/TaskList";
 import { GoalList } from "@/components/GoalList";
+import ProjectChat from "@/components/ProjectChat";
 import {
   Select,
   SelectContent,
@@ -247,6 +248,8 @@ const ProjectDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Team Chat */}
+              <ProjectChat projectId={project.id} />
               {/* Team Members */}
               <div className="p-6 rounded-2xl bg-card border border-border/40">
                 <div className="flex items-center justify-between mb-4">
