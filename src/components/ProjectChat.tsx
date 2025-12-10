@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useProjectMessages, useSendMessage, useDeleteMessage, useUploadAttachment, ProjectMessage } from '@/hooks/useProjectMessages';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +23,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'ap
 const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [message, setMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,11 +34,22 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage();
   const uploadAttachment = useUploadAttachment();
+  const { typingUsers, setTyping } = useTypingIndicator(projectId, currentUserId || undefined, currentUserName);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUserId(user?.id ?? null);
-    });
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .single();
+        setCurrentUserName(profile?.full_name || 'User');
+      }
+    };
+    fetchUser();
   }, []);
 
   useEffect(() => {
@@ -100,12 +113,22 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
       });
       setMessage('');
       setPendingAttachment(null);
+      setTyping(false);
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to send message',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    if (e.target.value.trim()) {
+      setTyping(true);
+    } else {
+      setTyping(false);
     }
   };
 
@@ -279,6 +302,22 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
           </div>
         )}
 
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex gap-1">
+              <span className="animate-bounce" style={{ animationDelay: '0ms' }}>•</span>
+              <span className="animate-bounce" style={{ animationDelay: '150ms' }}>•</span>
+              <span className="animate-bounce" style={{ animationDelay: '300ms' }}>•</span>
+            </div>
+            <span>
+              {typingUsers.length === 1
+                ? `${typingUsers[0].name} is typing...`
+                : `${typingUsers.map(u => u.name).join(', ')} are typing...`}
+            </span>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             ref={fileInputRef}
@@ -302,7 +341,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
           </Button>
           <Input
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             className="flex-1 bg-background/50"
             disabled={sendMessage.isPending}
