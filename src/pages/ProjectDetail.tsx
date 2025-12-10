@@ -10,6 +10,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { TaskList } from "@/components/TaskList";
 import { GoalList } from "@/components/GoalList";
 import ProjectChat from "@/components/ProjectChat";
+import SmartScheduling from "@/components/SmartScheduling";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useProject, useUpdateProject, useDeleteProject, useRemoveProjectMember } from "@/hooks/useProjects";
+import { useTasks } from "@/hooks/useTasks";
 import { ProjectDialog } from "@/components/ProjectDialog";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,6 +46,7 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id);
+  const { data: tasks } = useTasks(id);
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
   const removeMember = useRemoveProjectMember();
@@ -248,6 +251,17 @@ const ProjectDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Smart Scheduling */}
+              <SmartScheduling 
+                projectId={project.id} 
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+              
               {/* Team Chat */}
               <ProjectChat projectId={project.id} />
               {/* Team Members */}
