@@ -14,10 +14,11 @@ import {
   Clock,
   UserCheck,
   Bell,
-  ChevronRight
+  ChevronRight,
+  Check,
+  Play
 } from 'lucide-react';
 import { useSmartScheduling, SchedulingSuggestion, ScheduleItem, DeadlineAlert } from '@/hooks/useSmartScheduling';
-import { format } from 'date-fns';
 
 interface Task {
   id: string;
@@ -46,12 +47,17 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
   const [activeTab, setActiveTab] = useState('suggestions');
   const { 
     isLoading, 
+    isApplying,
     suggestions, 
     schedule, 
     workload, 
     alerts, 
-    fetchSchedulingData 
-  } = useSmartScheduling();
+    fetchSchedulingData,
+    applyScheduleItem,
+    applyReassignment,
+    applyAllSchedule,
+    applyAllReassignments
+  } = useSmartScheduling(projectId);
 
   const handleAnalyze = (type: 'suggestions' | 'auto-schedule' | 'workload' | 'deadline-alerts') => {
     fetchSchedulingData(type, tasks, teamMembers, projectId);
@@ -83,6 +89,9 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
       default: return '📅';
     }
   };
+
+  const unappliedScheduleCount = schedule.filter(s => !s.applied).length;
+  const unappliedReassignmentCount = workload?.reassignments.filter(r => !r.applied).length || 0;
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -149,24 +158,62 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
           </TabsContent>
 
           <TabsContent value="auto-schedule" className="space-y-3">
-            <Button 
-              onClick={() => handleAnalyze('auto-schedule')} 
-              disabled={isLoading || tasks.length === 0}
-              className="w-full"
-              size="sm"
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Calendar className="h-4 w-4 mr-2" />}
-              Generate Schedule
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => handleAnalyze('auto-schedule')} 
+                disabled={isLoading || tasks.length === 0}
+                className="flex-1"
+                size="sm"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Calendar className="h-4 w-4 mr-2" />}
+                Generate Schedule
+              </Button>
+              {unappliedScheduleCount > 0 && (
+                <Button 
+                  onClick={applyAllSchedule} 
+                  disabled={!!isApplying}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Play className="h-4 w-4 mr-1" />
+                  Apply All ({unappliedScheduleCount})
+                </Button>
+              )}
+            </div>
             
             <ScrollArea className="h-[200px]">
               {schedule.length > 0 ? (
                 <div className="space-y-2">
                   {schedule.map((s, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-background/50 border border-border/50">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span>{getTimeBlockIcon(s.suggestedTimeBlock)}</span>
-                        <h4 className="text-sm font-medium truncate">{s.taskTitle}</h4>
+                    <div key={i} className={`p-3 rounded-lg border ${s.applied ? 'bg-green-500/10 border-green-500/30' : 'bg-background/50 border-border/50'}`}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span>{getTimeBlockIcon(s.suggestedTimeBlock)}</span>
+                          <h4 className="text-sm font-medium truncate">{s.taskTitle}</h4>
+                        </div>
+                        {s.applied ? (
+                          <Badge className="bg-green-500/20 text-green-600 border-green-500/30 text-xs shrink-0">
+                            <Check className="h-3 w-3 mr-1" />
+                            Applied
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs shrink-0"
+                            onClick={() => applyScheduleItem(s)}
+                            disabled={isApplying === s.taskId}
+                          >
+                            {isApplying === s.taskId ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3 mr-1" />
+                                Apply
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
@@ -186,15 +233,28 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
           </TabsContent>
 
           <TabsContent value="workload" className="space-y-3">
-            <Button 
-              onClick={() => handleAnalyze('workload')} 
-              disabled={isLoading || tasks.length === 0}
-              className="w-full"
-              size="sm"
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Users className="h-4 w-4 mr-2" />}
-              Analyze Workload
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => handleAnalyze('workload')} 
+                disabled={isLoading || tasks.length === 0}
+                className="flex-1"
+                size="sm"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Users className="h-4 w-4 mr-2" />}
+                Analyze Workload
+              </Button>
+              {unappliedReassignmentCount > 0 && (
+                <Button 
+                  onClick={() => applyAllReassignments(teamMembers)} 
+                  disabled={!!isApplying}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <Play className="h-4 w-4 mr-1" />
+                  Apply All ({unappliedReassignmentCount})
+                </Button>
+              )}
+            </div>
             
             <ScrollArea className="h-[200px]">
               {workload ? (
@@ -228,8 +288,33 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
                     <div className="space-y-2">
                       <p className="text-xs font-medium">Suggested Reassignments</p>
                       {workload.reassignments.map((r, i) => (
-                        <div key={i} className="p-2 rounded-lg bg-background/50 border border-border/50">
-                          <p className="text-sm font-medium truncate">{r.taskTitle}</p>
+                        <div key={i} className={`p-2 rounded-lg border ${r.applied ? 'bg-green-500/10 border-green-500/30' : 'bg-background/50 border-border/50'}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium truncate">{r.taskTitle}</p>
+                            {r.applied ? (
+                              <Badge className="bg-green-500/20 text-green-600 border-green-500/30 text-xs shrink-0">
+                                <Check className="h-3 w-3 mr-1" />
+                                Applied
+                              </Badge>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs shrink-0"
+                                onClick={() => applyReassignment(r, teamMembers)}
+                                disabled={isApplying === r.taskId}
+                              >
+                                {isApplying === r.taskId ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Apply
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                             <span>{r.currentAssignee || 'Unassigned'}</span>
                             <ChevronRight className="h-3 w-3" />

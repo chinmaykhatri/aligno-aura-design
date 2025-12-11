@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface SchedulingSuggestion {
   title: string;
@@ -15,6 +16,7 @@ export interface ScheduleItem {
   suggestedDate: string;
   suggestedTimeBlock: 'morning' | 'afternoon' | 'evening';
   reason: string;
+  applied?: boolean;
 }
 
 export interface WorkloadAnalysis {
@@ -27,7 +29,9 @@ export interface WorkloadAnalysis {
     taskTitle: string;
     currentAssignee: string | null;
     suggestedAssignee: string;
+    suggestedAssigneeId?: string;
     reason: string;
+    applied?: boolean;
   }[];
 }
 
@@ -58,13 +62,15 @@ interface TeamMember {
   role: string;
 }
 
-export const useSmartScheduling = () => {
+export const useSmartScheduling = (projectId?: string) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SchedulingSuggestion[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [workload, setWorkload] = useState<WorkloadAnalysis | null>(null);
   const [alerts, setAlerts] = useState<DeadlineAlert[]>([]);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const fetchSchedulingData = async (
     type: 'suggestions' | 'auto-schedule' | 'workload' | 'deadline-alerts',
@@ -91,10 +97,13 @@ export const useSmartScheduling = () => {
           setSuggestions(result.suggestions || []);
           break;
         case 'auto-schedule':
-          setSchedule(result.schedule || []);
+          setSchedule((result.schedule || []).map((s: ScheduleItem) => ({ ...s, applied: false })));
           break;
         case 'workload':
-          setWorkload(result);
+          setWorkload({
+            ...result,
+            reassignments: (result.reassignments || []).map((r: WorkloadAnalysis['reassignments'][0]) => ({ ...r, applied: false }))
+          });
           break;
         case 'deadline-alerts':
           setAlerts(result.alerts || []);
@@ -115,6 +124,102 @@ export const useSmartScheduling = () => {
     }
   };
 
+  const applyScheduleItem = async (item: ScheduleItem) => {
+    setIsApplying(item.taskId);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ due_date: item.suggestedDate })
+        .eq('id', item.taskId);
+
+      if (error) throw error;
+
+      setSchedule(prev => prev.map(s => 
+        s.taskId === item.taskId ? { ...s, applied: true } : s
+      ));
+
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      }
+
+      toast({
+        title: 'Schedule Applied',
+        description: `"${item.taskTitle}" scheduled for ${item.suggestedDate}`,
+      });
+    } catch (error: any) {
+      console.error('Apply schedule error:', error);
+      toast({
+        title: 'Failed to Apply',
+        description: error.message || 'Could not apply schedule',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplying(null);
+    }
+  };
+
+  const applyReassignment = async (reassignment: WorkloadAnalysis['reassignments'][0], teamMembers: TeamMember[]) => {
+    setIsApplying(reassignment.taskId);
+    try {
+      // Find the user_id for the suggested assignee
+      const assignee = teamMembers.find(m => 
+        m.full_name?.toLowerCase() === reassignment.suggestedAssignee.toLowerCase() ||
+        m.user_id === reassignment.suggestedAssigneeId
+      );
+
+      if (!assignee) {
+        throw new Error(`Could not find team member: ${reassignment.suggestedAssignee}`);
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ assigned_to: assignee.user_id })
+        .eq('id', reassignment.taskId);
+
+      if (error) throw error;
+
+      setWorkload(prev => prev ? {
+        ...prev,
+        reassignments: prev.reassignments.map(r => 
+          r.taskId === reassignment.taskId ? { ...r, applied: true } : r
+        )
+      } : null);
+
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+      }
+
+      toast({
+        title: 'Reassignment Applied',
+        description: `"${reassignment.taskTitle}" assigned to ${reassignment.suggestedAssignee}`,
+      });
+    } catch (error: any) {
+      console.error('Apply reassignment error:', error);
+      toast({
+        title: 'Failed to Apply',
+        description: error.message || 'Could not apply reassignment',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplying(null);
+    }
+  };
+
+  const applyAllSchedule = async () => {
+    const unapplied = schedule.filter(s => !s.applied);
+    for (const item of unapplied) {
+      await applyScheduleItem(item);
+    }
+  };
+
+  const applyAllReassignments = async (teamMembers: TeamMember[]) => {
+    if (!workload) return;
+    const unapplied = workload.reassignments.filter(r => !r.applied);
+    for (const item of unapplied) {
+      await applyReassignment(item, teamMembers);
+    }
+  };
+
   const clearData = () => {
     setSuggestions([]);
     setSchedule([]);
@@ -124,11 +229,16 @@ export const useSmartScheduling = () => {
 
   return {
     isLoading,
+    isApplying,
     suggestions,
     schedule,
     workload,
     alerts,
     fetchSchedulingData,
+    applyScheduleItem,
+    applyReassignment,
+    applyAllSchedule,
+    applyAllReassignments,
     clearData,
   };
 };
