@@ -16,8 +16,10 @@ import {
   Bell,
   ChevronRight,
   Check,
-  Play
+  Play,
+  History
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { useSmartScheduling, SchedulingSuggestion, ScheduleItem, DeadlineAlert } from '@/hooks/useSmartScheduling';
 
 interface Task {
@@ -52,7 +54,9 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
     suggestions, 
     schedule, 
     workload, 
-    alerts, 
+    alerts,
+    history,
+    historyLoading,
     fetchSchedulingData,
     applyScheduleItem,
     applyReassignment,
@@ -104,22 +108,26 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="suggestions" className="text-xs">
-              <Lightbulb className="h-3 w-3 mr-1" />
-              Suggestions
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="suggestions" className="text-xs px-1">
+              <Lightbulb className="h-3 w-3 mr-0.5" />
+              Tips
             </TabsTrigger>
-            <TabsTrigger value="auto-schedule" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
+            <TabsTrigger value="auto-schedule" className="text-xs px-1">
+              <Clock className="h-3 w-3 mr-0.5" />
               Schedule
             </TabsTrigger>
-            <TabsTrigger value="workload" className="text-xs">
-              <UserCheck className="h-3 w-3 mr-1" />
+            <TabsTrigger value="workload" className="text-xs px-1">
+              <UserCheck className="h-3 w-3 mr-0.5" />
               Workload
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="text-xs">
-              <Bell className="h-3 w-3 mr-1" />
+            <TabsTrigger value="alerts" className="text-xs px-1">
+              <Bell className="h-3 w-3 mr-0.5" />
               Alerts
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs px-1">
+              <History className="h-3 w-3 mr-0.5" />
+              History
             </TabsTrigger>
           </TabsList>
 
@@ -373,6 +381,61 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <Bell className="h-8 w-8 mb-2 opacity-50" />
                   <p className="text-xs">Check for deadline risks</p>
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-3">
+            <ScrollArea className="h-[240px]">
+              {historyLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : history.length > 0 ? (
+                <div className="space-y-2">
+                  {history.map((entry) => (
+                    <div key={entry.id} className="p-3 rounded-lg bg-background/50 border border-border/50">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="text-sm font-medium truncate">{entry.task_title}</h4>
+                        <Badge className={`text-xs shrink-0 ${
+                          entry.action_type === 'schedule' 
+                            ? 'bg-blue-500/20 text-blue-600 border-blue-500/30' 
+                            : 'bg-purple-500/20 text-purple-600 border-purple-500/30'
+                        }`}>
+                          {entry.action_type === 'schedule' ? 'Scheduled' : 'Reassigned'}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        {entry.action_type === 'schedule' && entry.details.suggestedDate && (
+                          <p className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {entry.details.suggestedDate}
+                            {entry.details.timeBlock && ` · ${entry.details.timeBlock}`}
+                          </p>
+                        )}
+                        {entry.action_type === 'reassignment' && (
+                          <p className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {entry.details.previousAssignee || 'Unassigned'}
+                            <ChevronRight className="h-3 w-3" />
+                            <span className="text-primary">{entry.details.newAssignee}</span>
+                          </p>
+                        )}
+                        {entry.details.reason && (
+                          <p className="text-muted-foreground/70 italic">"{entry.details.reason}"</p>
+                        )}
+                        <p className="text-muted-foreground/50 text-[10px] mt-1">
+                          Applied by {entry.appliedByName} · {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <History className="h-8 w-8 mb-2 opacity-50" />
+                  <p className="text-xs">No scheduling history yet</p>
                 </div>
               )}
             </ScrollArea>

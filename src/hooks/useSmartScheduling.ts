@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { sendSchedulingAppliedNotification } from '@/lib/emailNotifications';
+import { useSchedulingHistory } from '@/hooks/useSchedulingHistory';
 
 export interface SchedulingSuggestion {
   title: string;
@@ -72,6 +73,7 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
   const [alerts, setAlerts] = useState<DeadlineAlert[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { history, isLoading: historyLoading, logSchedulingAction } = useSchedulingHistory(projectId);
 
   const sendNotification = async (
     teamMembers: TeamMember[],
@@ -172,6 +174,19 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
 
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+        
+        // Log to history
+        await logSchedulingAction({
+          projectId,
+          taskId: item.taskId,
+          taskTitle: item.taskTitle,
+          actionType: 'schedule',
+          details: {
+            suggestedDate: item.suggestedDate,
+            timeBlock: item.suggestedTimeBlock,
+            reason: item.reason,
+          },
+        });
       }
 
       // Send notification to team members
@@ -229,6 +244,19 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
 
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+        
+        // Log to history
+        await logSchedulingAction({
+          projectId,
+          taskId: reassignment.taskId,
+          taskTitle: reassignment.taskTitle,
+          actionType: 'reassignment',
+          details: {
+            previousAssignee: reassignment.currentAssignee,
+            newAssignee: reassignment.suggestedAssignee,
+            reason: reassignment.reason,
+          },
+        });
       }
 
       // Send notification to team members
@@ -286,6 +314,8 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
     schedule,
     workload,
     alerts,
+    history,
+    historyLoading,
     fetchSchedulingData,
     applyScheduleItem,
     applyReassignment,

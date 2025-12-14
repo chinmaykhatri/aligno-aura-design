@@ -306,6 +306,54 @@ export type Database = {
           },
         ]
       }
+      scheduling_history: {
+        Row: {
+          action_type: string
+          created_at: string
+          details: Json
+          id: string
+          project_id: string
+          task_id: string | null
+          task_title: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          details?: Json
+          id?: string
+          project_id: string
+          task_id?: string | null
+          task_title: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          project_id?: string
+          task_id?: string | null
+          task_title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
