@@ -49,6 +49,7 @@ interface SmartSchedulingProps {
 
 const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSchedulingProps) => {
   const [activeTab, setActiveTab] = useState('suggestions');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'schedule' | 'reassignment'>('all');
   const { 
     isLoading, 
     isApplying,
@@ -132,6 +133,10 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  const filteredHistory = history.filter(entry => 
+    historyFilter === 'all' || entry.action_type === historyFilter
+  );
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -423,24 +428,54 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
 
           <TabsContent value="history" className="space-y-3">
             {history.length > 0 && (
-              <Button 
-                onClick={exportHistoryToCSV}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export to CSV
-              </Button>
+              <div className="flex gap-2">
+                <div className="flex-1 flex gap-1">
+                  <Button
+                    variant={historyFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1 text-xs h-8"
+                    onClick={() => setHistoryFilter('all')}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={historyFilter === 'schedule' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1 text-xs h-8"
+                    onClick={() => setHistoryFilter('schedule')}
+                  >
+                    <Clock className="h-3 w-3 mr-1" />
+                    Schedule
+                  </Button>
+                  <Button
+                    variant={historyFilter === 'reassignment' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1 text-xs h-8"
+                    onClick={() => setHistoryFilter('reassignment')}
+                  >
+                    <Users className="h-3 w-3 mr-1" />
+                    Reassign
+                  </Button>
+                </div>
+                <Button 
+                  onClick={exportHistoryToCSV}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2"
+                  title="Export to CSV"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
             )}
             <ScrollArea className="h-[200px]">
               {historyLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : history.length > 0 ? (
+              ) : filteredHistory.length > 0 ? (
                 <div className="space-y-2">
-                  {history.map((entry) => (
+                  {filteredHistory.map((entry) => (
                     <div key={entry.id} className="p-3 rounded-lg bg-background/50 border border-border/50">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="text-sm font-medium truncate">{entry.task_title}</h4>
