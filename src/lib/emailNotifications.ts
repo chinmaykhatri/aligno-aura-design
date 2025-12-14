@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest";
+type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied";
 
 interface NotificationData {
   type: NotificationType;
@@ -86,6 +86,23 @@ export const sendActivityDigestNotification = async (
     recipientEmail,
     recipientName,
     data: { period, activities, projectCount, activityCount },
+  });
+};
+
+export const sendSchedulingAppliedNotification = async (
+  recipientEmail: string,
+  recipientName: string | undefined,
+  projectName: string,
+  schedulingType: 'schedule' | 'reassignment',
+  taskTitle: string,
+  details: string,
+  appliedBy?: string
+) => {
+  return sendNotificationEmail({
+    type: "scheduling_applied",
+    recipientEmail,
+    recipientName,
+    data: { projectName, schedulingType, taskTitle, details, appliedBy },
   });
 };
 

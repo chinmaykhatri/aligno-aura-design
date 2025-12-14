@@ -39,11 +39,12 @@ interface TeamMember {
 
 interface SmartSchedulingProps {
   projectId: string;
+  projectName?: string;
   tasks: Task[];
   teamMembers: TeamMember[];
 }
 
-const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps) => {
+const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSchedulingProps) => {
   const [activeTab, setActiveTab] = useState('suggestions');
   const { 
     isLoading, 
@@ -57,7 +58,7 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
     applyReassignment,
     applyAllSchedule,
     applyAllReassignments
-  } = useSmartScheduling(projectId);
+  } = useSmartScheduling(projectId, projectName);
 
   const handleAnalyze = (type: 'suggestions' | 'auto-schedule' | 'workload' | 'deadline-alerts') => {
     fetchSchedulingData(type, tasks, teamMembers, projectId);
@@ -170,7 +171,7 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
               </Button>
               {unappliedScheduleCount > 0 && (
                 <Button 
-                  onClick={applyAllSchedule} 
+                  onClick={() => applyAllSchedule(teamMembers)} 
                   disabled={!!isApplying}
                   size="sm"
                   variant="secondary"
@@ -201,7 +202,7 @@ const SmartScheduling = ({ projectId, tasks, teamMembers }: SmartSchedulingProps
                             size="sm"
                             variant="ghost"
                             className="h-6 px-2 text-xs shrink-0"
-                            onClick={() => applyScheduleItem(s)}
+                            onClick={() => applyScheduleItem(s, teamMembers)}
                             disabled={isApplying === s.taskId}
                           >
                             {isApplying === s.taskId ? (
