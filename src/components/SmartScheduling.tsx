@@ -18,7 +18,8 @@ import {
   Check,
   Play,
   History,
-  Download
+  Download,
+  Undo2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSmartScheduling, SchedulingSuggestion, ScheduleItem, DeadlineAlert } from '@/hooks/useSmartScheduling';
@@ -59,11 +60,13 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
     alerts,
     history,
     historyLoading,
+    isUndoing,
     fetchSchedulingData,
     applyScheduleItem,
     applyReassignment,
     applyAllSchedule,
-    applyAllReassignments
+    applyAllReassignments,
+    undoSchedulingAction
   } = useSmartScheduling(projectId, projectName);
 
   const handleAnalyze = (type: 'suggestions' | 'auto-schedule' | 'workload' | 'deadline-alerts') => {
@@ -476,16 +479,42 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
               ) : filteredHistory.length > 0 ? (
                 <div className="space-y-2">
                   {filteredHistory.map((entry) => (
-                    <div key={entry.id} className="p-3 rounded-lg bg-background/50 border border-border/50">
+                    <div key={entry.id} className={`p-3 rounded-lg border ${entry.undone ? 'bg-muted/30 border-border/30 opacity-60' : 'bg-background/50 border-border/50'}`}>
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-medium truncate">{entry.task_title}</h4>
-                        <Badge className={`text-xs shrink-0 ${
-                          entry.action_type === 'schedule' 
-                            ? 'bg-blue-500/20 text-blue-600 border-blue-500/30' 
-                            : 'bg-purple-500/20 text-purple-600 border-purple-500/30'
-                        }`}>
-                          {entry.action_type === 'schedule' ? 'Scheduled' : 'Reassigned'}
-                        </Badge>
+                        <h4 className={`text-sm font-medium truncate ${entry.undone ? 'line-through' : ''}`}>{entry.task_title}</h4>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {entry.undone ? (
+                            <Badge className="text-xs bg-muted text-muted-foreground border-border">
+                              Undone
+                            </Badge>
+                          ) : (
+                            <>
+                              <Badge className={`text-xs ${
+                                entry.action_type === 'schedule' 
+                                  ? 'bg-blue-500/20 text-blue-600 border-blue-500/30' 
+                                  : 'bg-purple-500/20 text-purple-600 border-purple-500/30'
+                              }`}>
+                                {entry.action_type === 'schedule' ? 'Scheduled' : 'Reassigned'}
+                              </Badge>
+                              {entry.task_id && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-5 w-5 p-0"
+                                  onClick={() => undoSchedulingAction(entry)}
+                                  disabled={isUndoing}
+                                  title="Undo this change"
+                                >
+                                  {isUndoing ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Undo2 className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
                         {entry.action_type === 'schedule' && entry.details.suggestedDate && (
@@ -507,7 +536,10 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
                           <p className="text-muted-foreground/70 italic">"{entry.details.reason}"</p>
                         )}
                         <p className="text-muted-foreground/50 text-[10px] mt-1">
-                          Applied by {entry.appliedByName} · {format(new Date(entry.created_at), 'MMM d, h:mm a')}
+                          {entry.undone 
+                            ? `Undone · ${format(new Date(entry.undone_at!), 'MMM d, h:mm a')}`
+                            : `Applied by ${entry.appliedByName} · ${format(new Date(entry.created_at), 'MMM d, h:mm a')}`
+                          }
                         </p>
                       </div>
                     </div>

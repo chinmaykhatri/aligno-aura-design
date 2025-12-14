@@ -73,7 +73,7 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
   const [alerts, setAlerts] = useState<DeadlineAlert[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { history, isLoading: historyLoading, logSchedulingAction } = useSchedulingHistory(projectId);
+  const { history, isLoading: historyLoading, logSchedulingAction, undoSchedulingAction, isUndoing } = useSchedulingHistory(projectId);
 
   const sendNotification = async (
     teamMembers: TeamMember[],
@@ -161,6 +161,15 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
   const applyScheduleItem = async (item: ScheduleItem, teamMembers?: TeamMember[]) => {
     setIsApplying(item.taskId);
     try {
+      // Get current due_date before updating
+      const { data: currentTask } = await supabase
+        .from('tasks')
+        .select('due_date')
+        .eq('id', item.taskId)
+        .single();
+
+      const previousDueDate = currentTask?.due_date || null;
+
       const { error } = await supabase
         .from('tasks')
         .update({ due_date: item.suggestedDate })
@@ -175,7 +184,7 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
         
-        // Log to history
+        // Log to history with previous value for undo
         await logSchedulingAction({
           projectId,
           taskId: item.taskId,
@@ -185,6 +194,9 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
             suggestedDate: item.suggestedDate,
             timeBlock: item.suggestedTimeBlock,
             reason: item.reason,
+          },
+          previousValue: {
+            due_date: previousDueDate,
           },
         });
       }
@@ -218,6 +230,15 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
   const applyReassignment = async (reassignment: WorkloadAnalysis['reassignments'][0], teamMembers: TeamMember[]) => {
     setIsApplying(reassignment.taskId);
     try {
+      // Get current assigned_to before updating
+      const { data: currentTask } = await supabase
+        .from('tasks')
+        .select('assigned_to')
+        .eq('id', reassignment.taskId)
+        .single();
+
+      const previousAssignedTo = currentTask?.assigned_to || null;
+
       // Find the user_id for the suggested assignee
       const assignee = teamMembers.find(m => 
         m.full_name?.toLowerCase() === reassignment.suggestedAssignee.toLowerCase() ||
@@ -245,7 +266,7 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
         
-        // Log to history
+        // Log to history with previous value for undo
         await logSchedulingAction({
           projectId,
           taskId: reassignment.taskId,
@@ -255,6 +276,9 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
             previousAssignee: reassignment.currentAssignee,
             newAssignee: reassignment.suggestedAssignee,
             reason: reassignment.reason,
+          },
+          previousValue: {
+            assigned_to: previousAssignedTo,
           },
         });
       }
@@ -316,11 +340,13 @@ export const useSmartScheduling = (projectId?: string, projectName?: string) => 
     alerts,
     history,
     historyLoading,
+    isUndoing,
     fetchSchedulingData,
     applyScheduleItem,
     applyReassignment,
     applyAllSchedule,
     applyAllReassignments,
+    undoSchedulingAction,
     clearData,
   };
 };
