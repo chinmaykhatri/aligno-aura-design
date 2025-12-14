@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Check,
   Play,
-  History
+  History,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSmartScheduling, SchedulingSuggestion, ScheduleItem, DeadlineAlert } from '@/hooks/useSmartScheduling';
@@ -97,6 +98,40 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
 
   const unappliedScheduleCount = schedule.filter(s => !s.applied).length;
   const unappliedReassignmentCount = workload?.reassignments.filter(r => !r.applied).length || 0;
+
+  const exportHistoryToCSV = () => {
+    if (history.length === 0) return;
+
+    const headers = ['Date', 'Task', 'Action Type', 'Details', 'Applied By'];
+    const rows = history.map(entry => {
+      const details = entry.action_type === 'schedule'
+        ? `Scheduled for ${entry.details.suggestedDate || 'N/A'}${entry.details.timeBlock ? ` (${entry.details.timeBlock})` : ''}`
+        : `${entry.details.previousAssignee || 'Unassigned'} → ${entry.details.newAssignee || 'N/A'}`;
+      
+      return [
+        format(new Date(entry.created_at), 'yyyy-MM-dd HH:mm'),
+        entry.task_title.replace(/"/g, '""'),
+        entry.action_type,
+        details.replace(/"/g, '""'),
+        (entry.appliedByName || 'Unknown').replace(/"/g, '""')
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `scheduling-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -387,7 +422,18 @@ const SmartScheduling = ({ projectId, projectName, tasks, teamMembers }: SmartSc
           </TabsContent>
 
           <TabsContent value="history" className="space-y-3">
-            <ScrollArea className="h-[240px]">
+            {history.length > 0 && (
+              <Button 
+                onClick={exportHistoryToCSV}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export to CSV
+              </Button>
+            )}
+            <ScrollArea className="h-[200px]">
               {historyLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
