@@ -253,7 +253,8 @@ const ProjectDetail = () => {
             <div className="space-y-6">
               {/* Smart Scheduling */}
               <SmartScheduling 
-                projectId={project.id} 
+                projectId={project.id}
+                projectName={project.name}
                 tasks={tasks || []}
                 teamMembers={project.members?.map(m => ({
                   user_id: m.user_id,

@@ -46,7 +46,7 @@ function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; r
   return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetTime - now };
 }
 
-type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest";
+type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied";
 
 interface NotificationRequest {
   type: NotificationType;
@@ -78,7 +78,7 @@ function validateRequest(req: unknown): { valid: true; data: NotificationRequest
 
   const { type, recipientEmail, recipientName, data } = req as Record<string, unknown>;
 
-  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest'];
+  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest', 'scheduling_applied'];
   if (!type || !validTypes.includes(type as NotificationType)) {
     return { valid: false, error: 'Invalid notification type' };
   }
@@ -195,6 +195,27 @@ const getEmailContent = (type: NotificationType, data: Record<string, unknown>, 
                 <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0; font-size: 12px;">Activities</p>
               </div>
             </div>
+          </div>
+        `,
+      };
+
+    case "scheduling_applied":
+      const scheduleTypeLabel = data.schedulingType === 'reassignment' ? 'Task Reassignment' : 'Schedule Update';
+      return {
+        subject: `AI Scheduling Applied: ${escapeHtml(String(data.taskTitle || ''))}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1a1a2e; margin-bottom: 20px;">🤖 AI Scheduling Applied</h1>
+            <p style="color: #4a4a4a; font-size: 16px;">Hi ${name},</p>
+            <p style="color: #4a4a4a; font-size: 16px;">An AI scheduling suggestion has been applied to <strong>${escapeHtml(String(data.projectName || ''))}</strong>.</p>
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="color: white; margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(scheduleTypeLabel)}</p>
+              <p style="color: white; margin: 10px 0 0; font-size: 20px; font-weight: bold;">${escapeHtml(String(data.taskTitle || ''))}</p>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #f5576c;">
+              <p style="color: #4a4a4a; margin: 0; font-size: 14px;">${escapeHtml(String(data.details || ''))}</p>
+            </div>
+            <p style="color: #888; font-size: 14px;">Applied by: ${escapeHtml(String(data.appliedBy || "Team member"))}</p>
           </div>
         `,
       };
