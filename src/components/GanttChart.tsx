@@ -22,6 +22,13 @@ interface TaskWithProject extends Task {
   project_name?: string;
 }
 
+interface TaskDependency {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
+  created_at: string;
+}
+
 const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
@@ -194,9 +201,12 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
     setSelectedTaskForDep(null);
   };
 
-  // Get priority color
-  const getPriorityColor = (priority: string, status: string) => {
+  // Get priority color with critical path highlighting
+  const getPriorityColor = (priority: string, status: string, taskId: string) => {
     if (status === 'completed') return 'bg-muted/50 border-dashed border-border';
+    if (criticalPathTaskIds.has(taskId)) {
+      return 'bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 ring-2 ring-rose-400/50 shadow-lg shadow-rose-500/20';
+    }
     switch (priority) {
       case 'high': return 'bg-red-500/80 hover:bg-red-500';
       case 'medium': return 'bg-amber-500/80 hover:bg-amber-500';
@@ -215,6 +225,119 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
       return acc;
     }, {} as Record<string, TaskWithProject[]>);
   }, [tasks]);
+
+  // Calculate critical path - longest dependency chain affecting project completion
+  const criticalPathTaskIds = useMemo(() => {
+    if (!tasks || tasks.length === 0 || !dependencies || dependencies.length === 0) {
+      return new Set<string>();
+    }
+
+    // Build adjacency list (task -> tasks that depend on it)
+    const dependents: Record<string, string[]> = {};
+    const prerequisites: Record<string, string[]> = {};
+    
+    tasks.forEach(task => {
+      dependents[task.id] = [];
+      prerequisites[task.id] = [];
+    });
+
+    dependencies.forEach(dep => {
+      if (dependents[dep.depends_on_task_id]) {
+        dependents[dep.depends_on_task_id].push(dep.task_id);
+      }
+      if (prerequisites[dep.task_id]) {
+        prerequisites[dep.task_id].push(dep.depends_on_task_id);
+      }
+    });
+
+    // Calculate task duration in days
+    const getTaskDuration = (task: TaskWithProject): number => {
+      return task.estimated_hours ? Math.ceil(task.estimated_hours / 8) : 1;
+    };
+
+    // Find earliest start time for each task (forward pass)
+    const earliestStart: Record<string, number> = {};
+    const taskById: Record<string, TaskWithProject> = {};
+    tasks.forEach(task => {
+      taskById[task.id] = task;
+      earliestStart[task.id] = 0;
+    });
+
+    // Topological sort using Kahn's algorithm
+    const inDegree: Record<string, number> = {};
+    tasks.forEach(task => {
+      inDegree[task.id] = prerequisites[task.id]?.length || 0;
+    });
+
+    const queue: string[] = [];
+    const sorted: string[] = [];
+    
+    Object.entries(inDegree).forEach(([taskId, degree]) => {
+      if (degree === 0) queue.push(taskId);
+    });
+
+    while (queue.length > 0) {
+      const taskId = queue.shift()!;
+      sorted.push(taskId);
+      
+      dependents[taskId]?.forEach(depId => {
+        const prereqDuration = getTaskDuration(taskById[taskId]);
+        earliestStart[depId] = Math.max(
+          earliestStart[depId],
+          earliestStart[taskId] + prereqDuration
+        );
+        
+        inDegree[depId]--;
+        if (inDegree[depId] === 0) {
+          queue.push(depId);
+        }
+      });
+    }
+
+    // Find project end time (latest finish time)
+    let projectEndTime = 0;
+    let endTasks: string[] = [];
+    
+    tasks.forEach(task => {
+      const finishTime = earliestStart[task.id] + getTaskDuration(task);
+      if (finishTime > projectEndTime) {
+        projectEndTime = finishTime;
+        endTasks = [task.id];
+      } else if (finishTime === projectEndTime) {
+        endTasks.push(task.id);
+      }
+    });
+
+    // Backward pass - calculate latest start times
+    const latestStart: Record<string, number> = {};
+    tasks.forEach(task => {
+      latestStart[task.id] = projectEndTime - getTaskDuration(task);
+    });
+
+    // Reverse topological order
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const taskId = sorted[i];
+      const task = taskById[taskId];
+      
+      dependents[taskId]?.forEach(depId => {
+        latestStart[taskId] = Math.min(
+          latestStart[taskId],
+          latestStart[depId] - getTaskDuration(task)
+        );
+      });
+    }
+
+    // Critical path: tasks where earliest start = latest start (zero slack)
+    const criticalTasks = new Set<string>();
+    tasks.forEach(task => {
+      const slack = latestStart[task.id] - earliestStart[task.id];
+      if (slack === 0 && (prerequisites[task.id]?.length > 0 || dependents[task.id]?.length > 0)) {
+        criticalTasks.add(task.id);
+      }
+    });
+
+    return criticalTasks;
+  }, [tasks, dependencies]);
 
   // Calculate SVG height
   const svgHeight = useMemo(() => {
@@ -474,7 +597,7 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
                             <div
                               className={cn(
                                 "absolute h-7 rounded-md cursor-move flex items-center px-2 transition-all border",
-                                getPriorityColor(task.priority, task.status),
+                                getPriorityColor(task.priority, task.status, task.id),
                                 draggingTask === task.id && "opacity-70 scale-105 shadow-lg"
                               )}
                               style={{
@@ -506,6 +629,11 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
                               {taskDeps.length > 0 && (
                                 <p className="text-xs text-copper">
                                   Has {taskDeps.length} prerequisite{taskDeps.length > 1 ? 's' : ''}
+                                </p>
+                              )}
+                              {criticalPathTaskIds.has(task.id) && (
+                                <p className="text-xs text-rose-400 font-medium">
+                                  ⚡ Critical Path
                                 </p>
                               )}
                             </div>
