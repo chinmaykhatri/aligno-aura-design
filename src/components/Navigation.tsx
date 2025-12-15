@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar } from "lucide-react";
+import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar"].some(route => 
+  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar", "/gantt"].some(route => 
     location.pathname.startsWith(route)
   );
 
@@ -68,6 +68,17 @@ const Navigation = () => {
             >
               <FolderKanban className="w-4 h-4" />
               Projects
+            </Link>
+            <Link 
+              to="/gantt" 
+              className={`text-sm transition-smooth flex items-center gap-2 ${
+                location.pathname === "/gantt" 
+                  ? "text-copper font-medium" 
+                  : "text-muted-foreground hover:text-copper"
+              }`}
+            >
+              <GanttChart className="w-4 h-4" />
+              Timeline
             </Link>
             <Link 
               to="/activity" 
