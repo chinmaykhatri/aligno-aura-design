@@ -142,6 +142,10 @@ const Gantt = () => {
           {/* Legend */}
           <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-gradient-to-r from-rose-600 to-orange-500 ring-1 ring-rose-400/50" />
+              <span>Critical Path</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-red-500/80" />
               <span>High Priority</span>
             </div>
@@ -168,7 +172,7 @@ const Gantt = () => {
 
           {/* Help text */}
           <p className="text-xs text-muted-foreground">
-            <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon next to a task name to add dependencies. Click on an arrow to remove a dependency.
+            <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon next to a task name to add dependencies. Tasks on the <span className="text-rose-400">critical path</span> (highlighted in red-orange) are the longest dependency chain affecting project completion — delays to these tasks will delay the entire project.
           </p>
         </div>
       </main>
