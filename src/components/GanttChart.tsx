@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUpdateTask, Task } from '@/hooks/useTasks';
 import { useTaskDependencies, useCreateDependency, useDeleteDependency } from '@/hooks/useTaskDependencies';
-import { format, addDays, differenceInDays, isSameDay, startOfDay, parseISO } from 'date-fns';
+import { format, addDays, addWeeks, addMonths, differenceInDays, differenceInWeeks, differenceInMonths, isSameDay, isSameWeek, isSameMonth, startOfDay, startOfWeek, startOfMonth, parseISO, endOfWeek, endOfMonth } from 'date-fns';
 import { Loader2, GripVertical, Link2, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,10 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+export type ZoomLevel = 'day' | 'week' | 'month';
+
 interface GanttChartProps {
   projectId?: string;
   startDate: Date;
   daysToShow: number;
+  zoomLevel?: ZoomLevel;
 }
 
 interface TaskWithProject extends Task {
@@ -29,7 +32,7 @@ interface TaskDependency {
   created_at: string;
 }
 
-const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
+const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: GanttChartProps) => {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
   const { data: dependencies } = useTaskDependencies(projectId);
@@ -76,19 +79,39 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
     },
   });
 
-  // Generate date columns
+  // Zoom level configuration
+  const zoomConfig = useMemo(() => {
+    switch (zoomLevel) {
+      case 'week':
+        return { columnWidth: 80, unitsToShow: Math.ceil(daysToShow / 7) };
+      case 'month':
+        return { columnWidth: 100, unitsToShow: Math.ceil(daysToShow / 30) };
+      default:
+        return { columnWidth: 60, unitsToShow: daysToShow };
+    }
+  }, [zoomLevel, daysToShow]);
+
+  const { columnWidth, unitsToShow } = zoomConfig;
+
+  // Generate date columns based on zoom level
   const dateColumns = useMemo(() => {
-    return Array.from({ length: daysToShow }, (_, i) => addDays(startDate, i));
-  }, [startDate, daysToShow]);
+    switch (zoomLevel) {
+      case 'week':
+        return Array.from({ length: unitsToShow }, (_, i) => addWeeks(startOfWeek(startDate, { weekStartsOn: 1 }), i));
+      case 'month':
+        return Array.from({ length: unitsToShow }, (_, i) => addMonths(startOfMonth(startDate), i));
+      default:
+        return Array.from({ length: unitsToShow }, (_, i) => addDays(startDate, i));
+    }
+  }, [startDate, unitsToShow, zoomLevel]);
 
   const today = startOfDay(new Date());
-  const columnWidth = 60;
   const taskNameWidth = 200;
   const rowHeight = 44;
   const taskBarHeight = 28;
   const taskBarTop = 8;
 
-  // Calculate task position and width
+  // Calculate task position and width based on zoom level
   const getTaskStyle = useCallback((task: TaskWithProject) => {
     if (!task.due_date) return null;
 
@@ -96,18 +119,49 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
     const estimatedDays = task.estimated_hours ? Math.ceil(task.estimated_hours / 8) : 1;
     const taskStart = addDays(taskDate, -estimatedDays + 1);
     
-    const startOffset = differenceInDays(taskStart, startDate);
-    const endOffset = differenceInDays(taskDate, startDate);
+    let startOffset: number;
+    let endOffset: number;
+    let pixelsPerDay: number;
 
-    if (endOffset < 0 || startOffset >= daysToShow) return null;
-
-    const visibleStart = Math.max(0, startOffset);
-    const visibleEnd = Math.min(daysToShow - 1, endOffset);
-    const width = (visibleEnd - visibleStart + 1) * columnWidth;
-    const left = visibleStart * columnWidth;
-
-    return { left, width, startOffset, endOffset };
-  }, [startDate, daysToShow, columnWidth]);
+    switch (zoomLevel) {
+      case 'week': {
+        const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+        const startDays = differenceInDays(taskStart, weekStart);
+        const endDays = differenceInDays(taskDate, weekStart);
+        pixelsPerDay = columnWidth / 7;
+        startOffset = startDays * pixelsPerDay;
+        endOffset = (endDays + 1) * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (endOffset < 0 || startOffset >= totalWidth) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(totalWidth, endOffset);
+        return { left: visibleStart, width: Math.max(visibleEnd - visibleStart, 20), startOffset, endOffset };
+      }
+      case 'month': {
+        const monthStart = startOfMonth(startDate);
+        const startDays = differenceInDays(taskStart, monthStart);
+        const endDays = differenceInDays(taskDate, monthStart);
+        pixelsPerDay = columnWidth / 30;
+        startOffset = startDays * pixelsPerDay;
+        endOffset = (endDays + 1) * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (endOffset < 0 || startOffset >= totalWidth) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(totalWidth, endOffset);
+        return { left: visibleStart, width: Math.max(visibleEnd - visibleStart, 15), startOffset, endOffset };
+      }
+      default: {
+        startOffset = differenceInDays(taskStart, startDate);
+        endOffset = differenceInDays(taskDate, startDate);
+        if (endOffset < 0 || startOffset >= unitsToShow) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(unitsToShow - 1, endOffset);
+        const width = (visibleEnd - visibleStart + 1) * columnWidth;
+        const left = visibleStart * columnWidth;
+        return { left, width: Math.max(width, 30), startOffset, endOffset };
+      }
+    }
+  }, [startDate, unitsToShow, columnWidth, zoomLevel]);
 
   // Update task positions for arrow drawing
   useEffect(() => {
@@ -463,7 +517,7 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
           ref={svgRef}
           className="absolute top-0 left-0 pointer-events-none z-10"
           style={{ 
-            width: daysToShow * columnWidth + taskNameWidth,
+            width: unitsToShow * columnWidth + taskNameWidth,
             height: svgHeight 
           }}
         >
@@ -487,33 +541,62 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
           </g>
         </svg>
 
-        <div style={{ minWidth: daysToShow * columnWidth + taskNameWidth }}>
+        <div style={{ minWidth: unitsToShow * columnWidth + taskNameWidth }}>
           {/* Header with dates */}
           <div className="flex border-b border-border/50 sticky top-0 bg-card z-20">
             <div className="w-[200px] shrink-0 px-4 py-2 border-r border-border/50 font-medium text-sm">
               Task
             </div>
             <div className="flex">
-              {dateColumns.map((date, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex flex-col items-center justify-center py-2 border-r border-border/30 text-xs",
-                    isSameDay(date, today) && "bg-copper/10"
-                  )}
-                  style={{ width: columnWidth }}
-                >
-                  <span className="text-muted-foreground">
-                    {format(date, 'EEE')}
-                  </span>
-                  <span className={cn(
-                    "font-medium",
-                    isSameDay(date, today) && "text-copper"
-                  )}>
-                    {format(date, 'd')}
-                  </span>
-                </div>
-              ))}
+              {dateColumns.map((date, i) => {
+                const isCurrentPeriod = zoomLevel === 'day' 
+                  ? isSameDay(date, today)
+                  : zoomLevel === 'week'
+                    ? isSameWeek(date, today, { weekStartsOn: 1 })
+                    : isSameMonth(date, today);
+                
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex flex-col items-center justify-center py-2 border-r border-border/30 text-xs",
+                      isCurrentPeriod && "bg-copper/10"
+                    )}
+                    style={{ width: columnWidth }}
+                  >
+                    {zoomLevel === 'day' && (
+                      <>
+                        <span className="text-muted-foreground">
+                          {format(date, 'EEE')}
+                        </span>
+                        <span className={cn("font-medium", isCurrentPeriod && "text-copper")}>
+                          {format(date, 'd')}
+                        </span>
+                      </>
+                    )}
+                    {zoomLevel === 'week' && (
+                      <>
+                        <span className="text-muted-foreground">
+                          {format(date, 'MMM')}
+                        </span>
+                        <span className={cn("font-medium", isCurrentPeriod && "text-copper")}>
+                          W{format(date, 'w')}
+                        </span>
+                      </>
+                    )}
+                    {zoomLevel === 'month' && (
+                      <>
+                        <span className={cn("font-medium", isCurrentPeriod && "text-copper")}>
+                          {format(date, 'MMM')}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {format(date, 'yyyy')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -579,16 +662,24 @@ const GanttChart = ({ projectId, startDate, daysToShow }: GanttChartProps) => {
                     {/* Timeline area */}
                     <div className="flex relative" style={{ height: rowHeight }}>
                       {/* Grid lines */}
-                      {dateColumns.map((date, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "border-r border-border/20",
-                            isSameDay(date, today) && "bg-copper/5"
-                          )}
-                          style={{ width: columnWidth }}
-                        />
-                      ))}
+                      {dateColumns.map((date, i) => {
+                        const isCurrentPeriod = zoomLevel === 'day' 
+                          ? isSameDay(date, today)
+                          : zoomLevel === 'week'
+                            ? isSameWeek(date, today, { weekStartsOn: 1 })
+                            : isSameMonth(date, today);
+                        
+                        return (
+                          <div
+                            key={i}
+                            className={cn(
+                              "border-r border-border/20",
+                              isCurrentPeriod && "bg-copper/5"
+                            )}
+                            style={{ width: columnWidth }}
+                          />
+                        );
+                      })}
 
                       {/* Task bar */}
                       {style && (
