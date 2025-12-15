@@ -157,7 +157,19 @@ const Gantt = () => {
               <div className="w-3 h-3 rounded bg-muted/50 border border-dashed border-border" />
               <span>Completed</span>
             </div>
+            <div className="flex items-center gap-2">
+              <svg width="24" height="12" className="text-copper">
+                <line x1="0" y1="6" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" />
+                <polygon points="18,3 24,6 18,9" fill="currentColor" />
+              </svg>
+              <span>Dependency</span>
+            </div>
           </div>
+
+          {/* Help text */}
+          <p className="text-xs text-muted-foreground">
+            <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon next to a task name to add dependencies. Click on an arrow to remove a dependency.
+          </p>
         </div>
       </main>
     </div>
