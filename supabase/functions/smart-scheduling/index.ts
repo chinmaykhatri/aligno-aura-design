@@ -5,6 +5,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitize user input to prevent prompt injection attacks
+function sanitizeForPrompt(input: string | null | undefined, maxLength: number = 200): string {
+  if (!input) return '';
+  
+  // Remove control characters and dangerous patterns
+  let sanitized = String(input)
+    .replace(/[\x00-\x1f\x7f]/g, '') // Control characters
+    .replace(/[<>{}[\]\\]/g, '') // Brackets and backslashes
+    .replace(/```/g, '') // Code blocks
+    .replace(/\n{2,}/g, '\n') // Multiple newlines
+    .trim();
+  
+  // Truncate to max length
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength) + '...';
+  }
+  
+  return sanitized;
+}
+
+// Validate allowed values for enum-like fields
+function validatePriority(priority: unknown): string {
+  const allowed = ['low', 'medium', 'high'];
+  return allowed.includes(String(priority)) ? String(priority) : 'medium';
+}
+
+function validateStatus(status: unknown): string {
+  const allowed = ['pending', 'in_progress', 'completed', 'on_hold'];
+  return allowed.includes(String(status)) ? String(status) : 'pending';
+}
+
+function validateRole(role: unknown): string {
+  const allowed = ['owner', 'member', 'viewer'];
+  return allowed.includes(String(role)) ? String(role) : 'member';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,18 +54,30 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // Validate type is an allowed scheduling operation
+    const allowedTypes = ['suggestions', 'auto-schedule', 'workload', 'deadline-alerts'];
+    if (!allowedTypes.includes(type)) {
+      console.error(`Invalid scheduling type: ${type}`);
+      return new Response(JSON.stringify({ error: 'Invalid scheduling type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`Smart scheduling request: ${type} for project ${projectId}`);
     console.log(`Tasks count: ${tasks?.length || 0}, Team members: ${teamMembers?.length || 0}`);
 
     let systemPrompt = '';
     let userPrompt = '';
 
+    // Sanitize task data before embedding in prompts
     const tasksContext = tasks?.map((t: any) => 
-      `- "${t.title}" (Priority: ${t.priority}, Status: ${t.status}, Due: ${t.due_date || 'No deadline'}, Estimated: ${t.estimated_hours || 'N/A'}h, Tracked: ${t.tracked_hours || 0}h, Assigned to: ${t.assigned_to || 'Unassigned'})`
+      `- "${sanitizeForPrompt(t.title, 100)}" (Priority: ${validatePriority(t.priority)}, Status: ${validateStatus(t.status)}, Due: ${t.due_date || 'No deadline'}, Estimated: ${Number(t.estimated_hours) || 'N/A'}h, Tracked: ${Number(t.tracked_hours) || 0}h, Assigned to: ${sanitizeForPrompt(t.assigned_to, 50) || 'Unassigned'})`
     ).join('\n') || 'No tasks';
 
+    // Sanitize team member data
     const teamContext = teamMembers?.map((m: any) => 
-      `- ${m.full_name || 'Unknown'} (${m.role})`
+      `- ${sanitizeForPrompt(m.full_name, 50) || 'Unknown'} (${validateRole(m.role)})`
     ).join('\n') || 'No team members';
 
     switch (type) {
