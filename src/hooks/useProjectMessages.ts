@@ -155,15 +155,37 @@ export const useUploadAttachment = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
-
+      // Store the file path instead of public URL for security
+      // Signed URLs will be generated when displaying attachments
       return {
-        url: publicUrl,
+        url: filePath, // Store path, not public URL
         name: file.name,
         type: file.type,
       };
     },
   });
+};
+
+// Helper function to get signed URL for an attachment
+export const getAttachmentSignedUrl = async (attachmentUrl: string | null | undefined): Promise<string | null> => {
+  if (!attachmentUrl) return null;
+  
+  // Check if it's already a full URL (legacy data) or a file path
+  if (attachmentUrl.startsWith('http')) {
+    // Legacy public URL - return as-is (these won't work after bucket is private)
+    // Consider migrating old data or showing a placeholder
+    return attachmentUrl;
+  }
+  
+  // Generate signed URL for file path (1 hour expiry)
+  const { data, error } = await supabase.storage
+    .from('chat-attachments')
+    .createSignedUrl(attachmentUrl, 3600);
+  
+  if (error) {
+    console.error('Error creating signed URL:', error);
+    return null;
+  }
+  
+  return data.signedUrl;
 };

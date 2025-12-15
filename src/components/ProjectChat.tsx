@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useProjectMessages, useSendMessage, useDeleteMessage, useUploadAttachment, ProjectMessage } from '@/hooks/useProjectMessages';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useProjectMessages, useSendMessage, useDeleteMessage, useUploadAttachment, ProjectMessage, getAttachmentSignedUrl } from '@/hooks/useProjectMessages';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -35,6 +36,26 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const deleteMessage = useDeleteMessage();
   const uploadAttachment = useUploadAttachment();
   const { typingUsers, setTyping } = useTypingIndicator(projectId, currentUserId || undefined, currentUserName);
+
+  // Fetch signed URLs for attachments
+  const fetchSignedUrls = useCallback(async (msgs: ProjectMessage[]) => {
+    const attachmentMsgs = msgs.filter(m => m.attachment_url && !signedUrls[m.id]);
+    
+    for (const msg of attachmentMsgs) {
+      if (msg.attachment_url) {
+        const signedUrl = await getAttachmentSignedUrl(msg.attachment_url);
+        if (signedUrl) {
+          setSignedUrls(prev => ({ ...prev, [msg.id]: signedUrl }));
+        }
+      }
+    }
+  }, [signedUrls]);
+
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      fetchSignedUrls(messages);
+    }
+  }, [messages, fetchSignedUrls]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -160,14 +181,17 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
   const renderAttachment = (msg: ProjectMessage) => {
     if (!msg.attachment_url) return null;
 
+    // Use signed URL from cache, or fall back to stored URL
+    const displayUrl = signedUrls[msg.id] || msg.attachment_url;
+
     if (isImageType(msg.attachment_type)) {
       return (
         <button
-          onClick={() => setLightboxImage({ src: msg.attachment_url!, alt: msg.attachment_name || 'Image' })}
+          onClick={() => setLightboxImage({ src: displayUrl, alt: msg.attachment_name || 'Image' })}
           className="block mt-2 cursor-zoom-in"
         >
           <img
-            src={msg.attachment_url}
+            src={displayUrl}
             alt={msg.attachment_name || 'Attachment'}
             className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border/50 hover:opacity-90 transition-opacity"
           />
@@ -177,7 +201,7 @@ const ProjectChat = ({ projectId }: ProjectChatProps) => {
 
     return (
       <a
-        href={msg.attachment_url}
+        href={displayUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-background/50 border border-border/50 hover:bg-background/80 transition-colors max-w-[200px]"
