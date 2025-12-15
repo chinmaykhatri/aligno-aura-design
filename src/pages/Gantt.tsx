@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
-import GanttChart from '@/components/GanttChart';
+import GanttChart, { ZoomLevel } from '@/components/GanttChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, ZoomIn, ZoomOut, Calendar } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
-import { addDays, startOfWeek, format } from 'date-fns';
+import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format } from 'date-fns';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const Gantt = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('day');
   const [startDate, setStartDate] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const { data: projects } = useProjects();
 
@@ -38,16 +40,51 @@ const Gantt = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handlePreviousWeek = () => {
-    setStartDate(prev => addDays(prev, -7));
+  const handlePrevious = () => {
+    switch (zoomLevel) {
+      case 'week':
+        setStartDate(prev => addWeeks(prev, -4));
+        break;
+      case 'month':
+        setStartDate(prev => addMonths(prev, -3));
+        break;
+      default:
+        setStartDate(prev => addDays(prev, -7));
+    }
   };
 
-  const handleNextWeek = () => {
-    setStartDate(prev => addDays(prev, 7));
+  const handleNext = () => {
+    switch (zoomLevel) {
+      case 'week':
+        setStartDate(prev => addWeeks(prev, 4));
+        break;
+      case 'month':
+        setStartDate(prev => addMonths(prev, 3));
+        break;
+      default:
+        setStartDate(prev => addDays(prev, 7));
+    }
   };
 
   const handleToday = () => {
-    setStartDate(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    switch (zoomLevel) {
+      case 'week':
+        setStartDate(startOfWeek(new Date(), { weekStartsOn: 1 }));
+        break;
+      case 'month':
+        setStartDate(startOfMonth(new Date()));
+        break;
+      default:
+        setStartDate(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    }
+  };
+
+  const getDaysToShow = () => {
+    switch (zoomLevel) {
+      case 'week': return 84; // 12 weeks
+      case 'month': return 365; // 12 months
+      default: return 14; // 14 days
+    }
   };
 
   if (isLoading) {
@@ -98,35 +135,68 @@ const Gantt = () => {
           {/* Timeline Controls */}
           <Card className="bg-card/50 backdrop-blur border-border/50">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <CardTitle className="text-lg">
-                  {format(startDate, 'MMMM yyyy')}
+                  {format(startDate, zoomLevel === 'month' ? 'yyyy' : 'MMMM yyyy')}
                 </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviousWeek}
-                    className="h-8"
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Zoom Level Toggle */}
+                  <ToggleGroup 
+                    type="single" 
+                    value={zoomLevel} 
+                    onValueChange={(value) => value && setZoomLevel(value as ZoomLevel)}
+                    className="bg-muted/30 p-1 rounded-lg"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToday}
-                    className="h-8"
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextWeek}
-                    className="h-8"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                    <ToggleGroupItem 
+                      value="day" 
+                      aria-label="Day view"
+                      className="text-xs px-3 data-[state=on]:bg-copper data-[state=on]:text-white"
+                    >
+                      Day
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="week" 
+                      aria-label="Week view"
+                      className="text-xs px-3 data-[state=on]:bg-copper data-[state=on]:text-white"
+                    >
+                      Week
+                    </ToggleGroupItem>
+                    <ToggleGroupItem 
+                      value="month" 
+                      aria-label="Month view"
+                      className="text-xs px-3 data-[state=on]:bg-copper data-[state=on]:text-white"
+                    >
+                      Month
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+
+                  {/* Navigation Controls */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrevious}
+                      className="h-8"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToday}
+                      className="h-8"
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNext}
+                      className="h-8"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -134,7 +204,8 @@ const Gantt = () => {
               <GanttChart
                 projectId={selectedProject === 'all' ? undefined : selectedProject}
                 startDate={startDate}
-                daysToShow={14}
+                daysToShow={getDaysToShow()}
+                zoomLevel={zoomLevel}
               />
             </CardContent>
           </Card>
