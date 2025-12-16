@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import GanttChart, { ZoomLevel } from '@/components/GanttChart';
 import WorkloadView from '@/components/WorkloadView';
+import SprintPlanning from '@/components/SprintPlanning';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download, Save, Eye, EyeOff } from 'lucide-react';
+import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download, Save, Eye, EyeOff, Layers } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format } from 'date-fns';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -25,7 +26,7 @@ const Gantt = () => {
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('day');
   const [startDate, setStartDate] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [activeView, setActiveView] = useState<'gantt' | 'workload'>('gantt');
+  const [activeView, setActiveView] = useState<'gantt' | 'workload' | 'sprints'>('gantt');
   const { data: projects } = useProjects();
   const ganttRef = useRef<HTMLDivElement>(null);
 
@@ -271,11 +272,15 @@ const Gantt = () => {
           </div>
 
           {/* View Tabs */}
-          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'gantt' | 'workload')}>
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'gantt' | 'workload' | 'sprints')}>
             <TabsList className="bg-muted/30">
               <TabsTrigger value="gantt" className="data-[state=active]:bg-copper data-[state=active]:text-white">
                 <GanttIcon className="h-4 w-4 mr-2" />
                 Gantt Timeline
+              </TabsTrigger>
+              <TabsTrigger value="sprints" className="data-[state=active]:bg-copper data-[state=active]:text-white">
+                <Layers className="h-4 w-4 mr-2" />
+                Sprint Planning
               </TabsTrigger>
               <TabsTrigger value="workload" className="data-[state=active]:bg-copper data-[state=active]:text-white">
                 <Users className="h-4 w-4 mr-2" />
@@ -455,6 +460,19 @@ const Gantt = () => {
               <p className="text-xs text-muted-foreground mt-4">
                 <strong>Tip:</strong> Drag task bars to reschedule. Click "Save Baseline" to snapshot current dates. Enable "Baseline" to compare planned vs actual dates. <span className="text-red-400">Red text = behind schedule</span>, <span className="text-emerald-400">Green = ahead</span>.
               </p>
+            </TabsContent>
+
+            <TabsContent value="sprints" className="mt-4">
+              {selectedProject === 'all' ? (
+                <Card className="bg-card/50 backdrop-blur border-border/50">
+                  <CardContent className="py-12 text-center">
+                    <Layers className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground">Select a specific project to manage sprints</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <SprintPlanning projectId={selectedProject} />
+              )}
             </TabsContent>
 
             <TabsContent value="workload" className="mt-4">

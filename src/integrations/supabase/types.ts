@@ -363,6 +363,50 @@ export type Database = {
           },
         ]
       }
+      sprints: {
+        Row: {
+          created_at: string
+          end_date: string
+          goal: string | null
+          id: string
+          name: string
+          project_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          goal?: string | null
+          id?: string
+          name: string
+          project_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          goal?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprints_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_dependencies: {
         Row: {
           created_at: string
@@ -411,6 +455,7 @@ export type Database = {
           id: string
           priority: string
           project_id: string
+          sprint_id: string | null
           status: string
           title: string
           tracked_hours: number | null
@@ -428,6 +473,7 @@ export type Database = {
           id?: string
           priority?: string
           project_id: string
+          sprint_id?: string | null
           status?: string
           title: string
           tracked_hours?: number | null
@@ -445,6 +491,7 @@ export type Database = {
           id?: string
           priority?: string
           project_id?: string
+          sprint_id?: string | null
           status?: string
           title?: string
           tracked_hours?: number | null
@@ -457,6 +504,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
             referencedColumns: ["id"]
           },
         ]

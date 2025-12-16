@@ -18,6 +18,7 @@ export interface Task {
   assigned_to: string | null;
   baseline_due_date: string | null;
   baseline_estimated_hours: number | null;
+  sprint_id: string | null;
   created_at: string;
   updated_at: string;
 }
