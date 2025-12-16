@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
@@ -8,19 +8,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users } from 'lucide-react';
+import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format } from 'date-fns';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const Gantt = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('day');
   const [startDate, setStartDate] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [activeView, setActiveView] = useState<'gantt' | 'workload'>('gantt');
   const { data: projects } = useProjects();
+  const ganttRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -87,6 +92,90 @@ const Gantt = () => {
       case 'week': return 84; // 12 weeks
       case 'month': return 365; // 12 months
       default: return 14; // 14 days
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!ganttRef.current) {
+      toast.error('Unable to export - chart not found');
+      return;
+    }
+
+    setIsExporting(true);
+    toast.info('Generating PDF...');
+
+    try {
+      // Capture the Gantt chart as canvas
+      const canvas = await html2canvas(ganttRef.current, {
+        scale: 2, // Higher resolution
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#1a1a1a', // Match dark background
+        windowWidth: ganttRef.current.scrollWidth,
+        windowHeight: ganttRef.current.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      // Calculate PDF dimensions (landscape for better fit)
+      const pdfWidth = 297; // A4 landscape width in mm
+      const pdfHeight = 210; // A4 landscape height in mm
+      const margin = 10;
+      
+      // Calculate scaling to fit content
+      const contentWidth = pdfWidth - (margin * 2);
+      const contentHeight = pdfHeight - (margin * 2) - 20; // Extra space for title
+      
+      const scale = Math.min(
+        contentWidth / (imgWidth / 3.78), // Convert px to mm (96 DPI)
+        contentHeight / (imgHeight / 3.78)
+      );
+      
+      const scaledWidth = (imgWidth / 3.78) * scale;
+      const scaledHeight = (imgHeight / 3.78) * scale;
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      // Add title
+      const projectName = selectedProject === 'all' 
+        ? 'All Projects' 
+        : projects?.find(p => p.id === selectedProject)?.name || 'Project';
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(40, 40, 40);
+      pdf.text(`Gantt Timeline: ${projectName}`, margin, margin + 5);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Generated on ${format(new Date(), 'MMMM d, yyyy')} | View: ${zoomLevel.charAt(0).toUpperCase() + zoomLevel.slice(1)}`, margin, margin + 12);
+
+      // Add the chart image
+      const xOffset = margin + (contentWidth - scaledWidth) / 2;
+      pdf.addImage(imgData, 'PNG', xOffset, margin + 18, scaledWidth, scaledHeight);
+
+      // Add legend at bottom
+      const legendY = pdfHeight - margin - 5;
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('Legend: Red-Orange = Critical Path | Red = High Priority | Yellow = Medium | Green = Low | Diamond = Milestone | Dashed Arrow = Dependency', margin, legendY);
+
+      // Download PDF
+      const fileName = `gantt-${projectName.toLowerCase().replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      pdf.save(fileName);
+
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -214,16 +303,34 @@ const Gantt = () => {
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
+
+                      {/* Export Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportPDF}
+                        disabled={isExporting}
+                        className="h-8 bg-copper/10 border-copper/30 hover:bg-copper/20"
+                      >
+                        {isExporting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        Export PDF
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <GanttChart
-                    projectId={selectedProject === 'all' ? undefined : selectedProject}
-                    startDate={startDate}
-                    daysToShow={getDaysToShow()}
-                    zoomLevel={zoomLevel}
-                  />
+                  <div ref={ganttRef}>
+                    <GanttChart
+                      projectId={selectedProject === 'all' ? undefined : selectedProject}
+                      startDate={startDate}
+                      daysToShow={getDaysToShow()}
+                      zoomLevel={zoomLevel}
+                    />
+                  </div>
                 </CardContent>
               </Card>
 
