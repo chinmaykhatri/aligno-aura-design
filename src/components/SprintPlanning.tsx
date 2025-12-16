@@ -3,6 +3,7 @@ import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssig
 import { useTasks, Task } from '@/hooks/useTasks';
 import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
+import SprintRetrospective from '@/components/SprintRetrospective';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -336,6 +337,11 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                   <SprintBurndown sprint={sprint} tasks={tasks} />
                 )}
 
+                {/* Retrospective for Active Sprints */}
+                {isActive && (
+                  <SprintRetrospective sprint={sprint} />
+                )}
+
                 {/* Sprint Tasks */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2">
@@ -398,17 +404,17 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
           );
         })}
 
-        {/* Completed Sprints (collapsed) */}
+        {/* Completed Sprints with Retrospectives */}
         {sprints?.filter(s => s.status === 'completed').length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground">Completed Sprints</h3>
             {sprints?.filter(s => s.status === 'completed').map(sprint => (
               <Card key={sprint.id} className="bg-muted/20 border-border/30">
-                <CardContent className="py-3">
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-blue-400" />
-                      <span className="text-sm">{sprint.name}</span>
+                      <CardTitle className="text-base">{sprint.name}</CardTitle>
                       <span className="text-xs text-muted-foreground">
                         {format(parseISO(sprint.start_date), 'MMM d')} - {format(parseISO(sprint.end_date), 'MMM d')}
                       </span>
@@ -417,6 +423,9 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                       {getSprintStats(sprint.id).completed} tasks completed
                     </Badge>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  <SprintRetrospective sprint={sprint} />
                 </CardContent>
               </Card>
             ))}

@@ -363,6 +363,44 @@ export type Database = {
           },
         ]
       }
+      sprint_retrospectives: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_resolved: boolean | null
+          sprint_id: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          sprint_id: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          sprint_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_retrospectives_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprints: {
         Row: {
           created_at: string
