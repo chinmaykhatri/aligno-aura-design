@@ -34,6 +34,7 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']),
   due_date: z.string().optional(),
   estimated_hours: z.coerce.number().min(0).max(1000).optional(),
+  story_points: z.coerce.number().min(0).max(100).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -58,6 +59,7 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
       priority: 'medium',
       due_date: '',
       estimated_hours: undefined,
+      story_points: undefined,
     },
   });
 
@@ -69,6 +71,7 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
         priority: task.priority as 'low' | 'medium' | 'high',
         due_date: task.due_date ? task.due_date.split('T')[0] : '',
         estimated_hours: task.estimated_hours || undefined,
+        story_points: task.story_points || undefined,
       });
     } else {
       form.reset({
@@ -77,6 +80,7 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
         priority: 'medium',
         due_date: '',
         estimated_hours: undefined,
+        story_points: undefined,
       });
     }
   }, [task, form]);
@@ -88,6 +92,7 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
       priority: values.priority,
       due_date: values.due_date ? new Date(values.due_date).toISOString() : undefined,
       estimated_hours: values.estimated_hours || undefined,
+      story_points: values.story_points || undefined,
     };
 
     if (isEditing && task) {
@@ -170,6 +175,29 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
 
               <FormField
                 control={form.control}
+                name="story_points"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Story Points</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="estimated_hours"
                 render={({ field }) => (
                   <FormItem>
@@ -188,21 +216,21 @@ export const TaskDialog = ({ open, onOpenChange, projectId, task }: TaskDialogPr
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="due_date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="due_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

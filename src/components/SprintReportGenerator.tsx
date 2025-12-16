@@ -87,6 +87,10 @@ const SprintReportGenerator = ({ sprint, tasks }: SprintReportGeneratorProps) =>
       const completedHours = sprintTasks
         .filter(t => t.status === 'completed')
         .reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+      const totalPoints = sprintTasks.reduce((sum, t) => sum + (t.story_points || 0), 0);
+      const completedPoints = sprintTasks
+        .filter(t => t.status === 'completed')
+        .reduce((sum, t) => sum + (t.story_points || 0), 0);
       const completionRate = sprintTasks.length > 0 
         ? Math.round((completed / sprintTasks.length) * 100) 
         : 0;
@@ -98,12 +102,14 @@ const SprintReportGenerator = ({ sprint, tasks }: SprintReportGeneratorProps) =>
 
       // Stats boxes
       doc.setFillColor(240, 240, 240);
-      const boxWidth = (contentWidth - 15) / 4;
+      const hasStoryPoints = totalPoints > 0;
+      const boxWidth = hasStoryPoints ? (contentWidth - 20) / 5 : (contentWidth - 15) / 4;
       
       const stats = [
         { label: 'Total Tasks', value: sprintTasks.length.toString() },
         { label: 'Completed', value: completed.toString() },
         { label: 'Completion', value: `${completionRate}%` },
+        ...(hasStoryPoints ? [{ label: 'Story Points', value: `${completedPoints}/${totalPoints}` }] : []),
         { label: 'Hours Done', value: `${completedHours}/${totalHours}h` },
       ];
 

@@ -22,6 +22,8 @@ interface SprintMetrics {
   completionRate: number;
   totalHours: number;
   completedHours: number;
+  totalPoints: number;
+  completedPoints: number;
   hoursEfficiency: number;
   duration: number;
   velocity: number; // tasks per day
@@ -40,6 +42,8 @@ const SprintComparison = ({ sprints, tasks }: SprintComparisonProps) => {
       const completedTasks = sprintTasks.filter(t => t.status === 'completed');
       const totalHours = sprintTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
       const completedHours = completedTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+      const totalPoints = sprintTasks.reduce((sum, t) => sum + (t.story_points || 0), 0);
+      const completedPoints = completedTasks.reduce((sum, t) => sum + (t.story_points || 0), 0);
       const duration = differenceInDays(parseISO(sprint.end_date), parseISO(sprint.start_date)) || 1;
 
       return {
@@ -52,6 +56,8 @@ const SprintComparison = ({ sprints, tasks }: SprintComparisonProps) => {
           : 0,
         totalHours,
         completedHours,
+        totalPoints,
+        completedPoints,
         hoursEfficiency: totalHours > 0 
           ? Math.round((completedHours / totalHours) * 100) 
           : 0,
@@ -198,6 +204,16 @@ const SprintComparison = ({ sprints, tasks }: SprintComparisonProps) => {
                     </td>
                   ))}
                 </tr>
+                {selectedMetrics.some(m => m.totalPoints > 0) && (
+                  <tr className="border-b border-border/30">
+                    <td className="py-2 px-2 text-muted-foreground">Story Points</td>
+                    {selectedMetrics.map(m => (
+                      <td key={m.id} className="text-center py-2 px-2 font-medium text-purple-400">
+                        {m.completedPoints} / {m.totalPoints} SP
+                      </td>
+                    ))}
+                  </tr>
+                )}
                 <tr className="border-b border-border/30">
                   <td className="py-2 px-2 text-muted-foreground">Hours Completed</td>
                   {selectedMetrics.map(m => (

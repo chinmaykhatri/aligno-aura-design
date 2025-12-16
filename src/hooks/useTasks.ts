@@ -18,6 +18,8 @@ export interface Task {
   assigned_to: string | null;
   baseline_due_date: string | null;
   baseline_estimated_hours: number | null;
+  story_points: number | null;
+  baseline_story_points: number | null;
   sprint_id: string | null;
   created_at: string;
   updated_at: string;
@@ -81,6 +83,7 @@ export const useCreateTask = () => {
       priority?: string;
       due_date?: string;
       estimated_hours?: number;
+      story_points?: number;
       assigned_to?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -127,6 +130,8 @@ export const useUpdateTask = () => {
       due_date?: string | null;
       estimated_hours?: number | null;
       tracked_hours?: number | null;
+      story_points?: number | null;
+      baseline_story_points?: number | null;
       assigned_to?: string | null;
       baseline_due_date?: string | null;
       baseline_estimated_hours?: number | null;
