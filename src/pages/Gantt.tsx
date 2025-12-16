@@ -233,6 +233,12 @@ const Gantt = () => {
               <span>Completed</span>
             </div>
             <div className="flex items-center gap-2">
+              <svg width="12" height="12">
+                <polygon points="6,0 12,6 6,12 0,6" fill="hsl(var(--primary))" stroke="hsl(var(--primary-foreground))" strokeWidth="1" />
+              </svg>
+              <span>Goal Milestone</span>
+            </div>
+            <div className="flex items-center gap-2">
               <svg width="24" height="12" className="text-copper">
                 <line x1="0" y1="6" x2="18" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" />
                 <polygon points="18,3 24,6 18,9" fill="currentColor" />
@@ -243,7 +249,7 @@ const Gantt = () => {
 
           {/* Help text */}
           <p className="text-xs text-muted-foreground">
-            <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon next to a task name to add dependencies. Tasks on the <span className="text-rose-400">critical path</span> (highlighted in red-orange) are the longest dependency chain affecting project completion — delays to these tasks will delay the entire project.
+            <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon to add dependencies. <span className="text-primary">◆ Diamond markers</span> show goal target dates. Tasks on the <span className="text-rose-400">critical path</span> (red-orange) directly affect project completion.
           </p>
         </div>
       </main>

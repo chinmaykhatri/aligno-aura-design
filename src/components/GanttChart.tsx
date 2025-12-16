@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUpdateTask, Task } from '@/hooks/useTasks';
 import { useTaskDependencies, useCreateDependency, useDeleteDependency } from '@/hooks/useTaskDependencies';
 import { format, addDays, addWeeks, addMonths, differenceInDays, differenceInWeeks, differenceInMonths, isSameDay, isSameWeek, isSameMonth, startOfDay, startOfWeek, startOfMonth, parseISO, endOfWeek, endOfMonth } from 'date-fns';
+import { Goal } from '@/hooks/useGoals';
 import { Loader2, GripVertical, Link2, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -76,6 +77,35 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
         ...task,
         project_name: (task.projects as any)?.name || 'Unknown Project'
       })) as TaskWithProject[];
+    },
+  });
+
+  // Fetch goals with target dates for milestone markers
+  const { data: goals } = useQuery({
+    queryKey: ['gantt-goals', projectId],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      let query = supabase
+        .from('goals')
+        .select(`
+          *,
+          projects:project_id (name)
+        `)
+        .not('target_date', 'is', null);
+
+      if (projectId) {
+        query = query.eq('project_id', projectId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return (data || []).map(goal => ({
+        ...goal,
+        project_name: (goal.projects as any)?.name || 'Unknown Project'
+      })) as (Goal & { project_name: string })[];
     },
   });
 
@@ -403,6 +433,42 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
     return rows * rowHeight + 50; // Extra space for header
   }, [tasksByProject, projectId, rowHeight]);
 
+  // Calculate milestone positions for diamond markers
+  const getMilestoneStyle = useCallback((goal: Goal & { project_name: string }) => {
+    if (!goal.target_date) return null;
+
+    const goalDate = startOfDay(parseISO(goal.target_date));
+    
+    let position: number;
+
+    switch (zoomLevel) {
+      case 'week': {
+        const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+        const days = differenceInDays(goalDate, weekStart);
+        const pixelsPerDay = columnWidth / 7;
+        position = days * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (position < 0 || position >= totalWidth) return null;
+        return { left: position };
+      }
+      case 'month': {
+        const monthStart = startOfMonth(startDate);
+        const days = differenceInDays(goalDate, monthStart);
+        const pixelsPerDay = columnWidth / 30;
+        position = days * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (position < 0 || position >= totalWidth) return null;
+        return { left: position };
+      }
+      default: {
+        const dayOffset = differenceInDays(goalDate, startDate);
+        if (dayOffset < 0 || dayOffset >= unitsToShow) return null;
+        position = dayOffset * columnWidth + columnWidth / 2;
+        return { left: position };
+      }
+    }
+  }, [startDate, unitsToShow, columnWidth, zoomLevel]);
+
   // Draw dependency arrows
   const renderDependencyArrows = () => {
     if (!dependencies || dependencies.length === 0) return null;
@@ -454,6 +520,65 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
             }}
           />
         </g>
+      );
+    });
+  };
+
+  // Render milestone diamonds
+  const renderMilestones = () => {
+    if (!goals || goals.length === 0) return null;
+
+    return goals.map((goal) => {
+      const style = getMilestoneStyle(goal);
+      if (!style) return null;
+
+      const diamondSize = 12;
+      const x = taskNameWidth + style.left;
+      const y = 25; // Position in header area
+
+      return (
+        <Tooltip key={goal.id}>
+          <TooltipTrigger asChild>
+            <g className="cursor-pointer milestone-marker">
+              {/* Diamond shape */}
+              <polygon
+                points={`${x},${y - diamondSize} ${x + diamondSize},${y} ${x},${y + diamondSize} ${x - diamondSize},${y}`}
+                fill="hsl(var(--primary))"
+                stroke="hsl(var(--primary-foreground))"
+                strokeWidth="2"
+                className="hover:brightness-110 transition-all"
+              />
+              {/* Vertical line extending down */}
+              <line
+                x1={x}
+                y1={y + diamondSize}
+                x2={x}
+                y2={svgHeight}
+                stroke="hsl(var(--primary))"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.4"
+              />
+            </g>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="space-y-1">
+              <p className="font-medium flex items-center gap-2">
+                <span className="text-primary">◆</span> {goal.title}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Target: {format(parseISO(goal.target_date!), 'MMM d, yyyy')}
+              </p>
+              {goal.description && (
+                <p className="text-xs text-muted-foreground">{goal.description}</p>
+              )}
+              <p className="text-xs">
+                Progress: {goal.progress}% • {goal.status}
+              </p>
+              <p className="text-xs text-muted-foreground">{goal.project_name}</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       );
     });
   };
@@ -538,6 +663,9 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
           </defs>
           <g className="pointer-events-auto">
             {renderDependencyArrows()}
+          </g>
+          <g className="pointer-events-auto">
+            {renderMilestones()}
           </g>
         </svg>
 
