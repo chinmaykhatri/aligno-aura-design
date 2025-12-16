@@ -402,6 +402,8 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          baseline_due_date: string | null
+          baseline_estimated_hours: number | null
           created_at: string
           description: string | null
           due_date: string | null
@@ -417,6 +419,8 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          baseline_due_date?: string | null
+          baseline_estimated_hours?: number | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -432,6 +436,8 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          baseline_due_date?: string | null
+          baseline_estimated_hours?: number | null
           created_at?: string
           description?: string | null
           due_date?: string | null

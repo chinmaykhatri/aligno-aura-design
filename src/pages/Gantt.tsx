@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download } from 'lucide-react';
+import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download, Save, Eye, EyeOff } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format } from 'date-fns';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -20,6 +20,8 @@ const Gantt = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSavingBaseline, setIsSavingBaseline] = useState(false);
+  const [showBaseline, setShowBaseline] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('day');
   const [startDate, setStartDate] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -179,6 +181,50 @@ const Gantt = () => {
     }
   };
 
+  const handleSaveBaseline = async () => {
+    setIsSavingBaseline(true);
+    try {
+      // Get all tasks for the selected project(s)
+      let query = supabase
+        .from('tasks')
+        .select('id, due_date, estimated_hours')
+        .not('due_date', 'is', null);
+
+      if (selectedProject !== 'all') {
+        query = query.eq('project_id', selectedProject);
+      }
+
+      const { data: tasks, error: fetchError } = await query;
+      if (fetchError) throw fetchError;
+
+      if (!tasks || tasks.length === 0) {
+        toast.error('No tasks with due dates to save as baseline');
+        return;
+      }
+
+      // Update each task with current dates as baseline
+      const updates = tasks.map(task => 
+        supabase
+          .from('tasks')
+          .update({
+            baseline_due_date: task.due_date,
+            baseline_estimated_hours: task.estimated_hours,
+          })
+          .eq('id', task.id)
+      );
+
+      await Promise.all(updates);
+      
+      toast.success(`Baseline saved for ${tasks.length} tasks`);
+      setShowBaseline(true);
+    } catch (error) {
+      console.error('Save baseline error:', error);
+      toast.error('Failed to save baseline');
+    } finally {
+      setIsSavingBaseline(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-deep-black">
@@ -304,6 +350,35 @@ const Gantt = () => {
                         </Button>
                       </div>
 
+                      {/* Baseline Controls */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveBaseline}
+                        disabled={isSavingBaseline}
+                        className="h-8"
+                      >
+                        {isSavingBaseline ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        Save Baseline
+                      </Button>
+                      <Button
+                        variant={showBaseline ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowBaseline(!showBaseline)}
+                        className={`h-8 ${showBaseline ? 'bg-copper hover:bg-copper/90' : ''}`}
+                      >
+                        {showBaseline ? (
+                          <Eye className="h-4 w-4 mr-2" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 mr-2" />
+                        )}
+                        Baseline
+                      </Button>
+
                       {/* Export Button */}
                       <Button
                         variant="outline"
@@ -329,6 +404,7 @@ const Gantt = () => {
                       startDate={startDate}
                       daysToShow={getDaysToShow()}
                       zoomLevel={zoomLevel}
+                      showBaseline={showBaseline}
                     />
                   </div>
                 </CardContent>
@@ -369,11 +445,15 @@ const Gantt = () => {
                   </svg>
                   <span>Dependency</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-3 rounded border-2 border-dashed border-muted-foreground/40 bg-muted/20" />
+                  <span>Baseline (Planned)</span>
+                </div>
               </div>
 
               {/* Help text */}
               <p className="text-xs text-muted-foreground mt-4">
-                <strong>Tip:</strong> Drag task bars to reschedule. Click the link icon to add dependencies. <span className="text-primary">◆ Diamond markers</span> show goal target dates. Tasks on the <span className="text-rose-400">critical path</span> (red-orange) directly affect project completion.
+                <strong>Tip:</strong> Drag task bars to reschedule. Click "Save Baseline" to snapshot current dates. Enable "Baseline" to compare planned vs actual dates. <span className="text-red-400">Red text = behind schedule</span>, <span className="text-emerald-400">Green = ahead</span>.
               </p>
             </TabsContent>
 

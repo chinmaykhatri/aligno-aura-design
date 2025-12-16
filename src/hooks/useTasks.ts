@@ -16,6 +16,8 @@ export interface Task {
   estimated_hours: number | null;
   tracked_hours: number | null;
   assigned_to: string | null;
+  baseline_due_date: string | null;
+  baseline_estimated_hours: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -125,6 +127,8 @@ export const useUpdateTask = () => {
       estimated_hours?: number | null;
       tracked_hours?: number | null;
       assigned_to?: string | null;
+      baseline_due_date?: string | null;
+      baseline_estimated_hours?: number | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
