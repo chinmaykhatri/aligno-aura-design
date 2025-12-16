@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssignTaskToSprint, Sprint } from '@/hooks/useSprints';
 import { useTasks, Task } from '@/hooks/useTasks';
 import SprintBurndown from '@/components/SprintBurndown';
+import VelocityChart from '@/components/VelocityChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -227,6 +228,11 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Velocity Chart */}
+      {sprints && tasks && sprints.some(s => s.status === 'completed' || s.status === 'active') && (
+        <VelocityChart sprints={sprints} tasks={tasks} />
+      )}
 
       {/* Sprint Cards */}
       <div className="grid gap-4">
