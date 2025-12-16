@@ -5,6 +5,7 @@ import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
 import SprintRetrospective from '@/components/SprintRetrospective';
 import SprintReportGenerator from '@/components/SprintReportGenerator';
+import SprintComparison from '@/components/SprintComparison';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -234,6 +235,11 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
       {/* Velocity Chart */}
       {sprints && tasks && sprints.some(s => s.status === 'completed' || s.status === 'active') && (
         <VelocityChart sprints={sprints} tasks={tasks} />
+      )}
+
+      {/* Sprint Comparison */}
+      {sprints && tasks && sprints.filter(s => s.status === 'completed' || s.status === 'active').length >= 2 && (
+        <SprintComparison sprints={sprints} tasks={tasks} />
       )}
 
       {/* Sprint Cards */}
