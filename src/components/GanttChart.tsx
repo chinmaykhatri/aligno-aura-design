@@ -20,6 +20,7 @@ interface GanttChartProps {
   startDate: Date;
   daysToShow: number;
   zoomLevel?: ZoomLevel;
+  showBaseline?: boolean;
 }
 
 interface TaskWithProject extends Task {
@@ -33,7 +34,7 @@ interface TaskDependency {
   created_at: string;
 }
 
-const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: GanttChartProps) => {
+const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day', showBaseline = false }: GanttChartProps) => {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
   const { data: dependencies } = useTaskDependencies(projectId);
@@ -189,6 +190,58 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
         const width = (visibleEnd - visibleStart + 1) * columnWidth;
         const left = visibleStart * columnWidth;
         return { left, width: Math.max(width, 30), startOffset, endOffset };
+      }
+    }
+  }, [startDate, unitsToShow, columnWidth, zoomLevel]);
+
+  // Calculate baseline bar position and width
+  const getBaselineStyle = useCallback((task: TaskWithProject) => {
+    if (!task.baseline_due_date) return null;
+
+    const baselineDate = startOfDay(parseISO(task.baseline_due_date));
+    const estimatedDays = task.baseline_estimated_hours ? Math.ceil(task.baseline_estimated_hours / 8) : 1;
+    const baselineStart = addDays(baselineDate, -estimatedDays + 1);
+    
+    let startOffset: number;
+    let endOffset: number;
+    let pixelsPerDay: number;
+
+    switch (zoomLevel) {
+      case 'week': {
+        const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+        const startDays = differenceInDays(baselineStart, weekStart);
+        const endDays = differenceInDays(baselineDate, weekStart);
+        pixelsPerDay = columnWidth / 7;
+        startOffset = startDays * pixelsPerDay;
+        endOffset = (endDays + 1) * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (endOffset < 0 || startOffset >= totalWidth) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(totalWidth, endOffset);
+        return { left: visibleStart, width: Math.max(visibleEnd - visibleStart, 20) };
+      }
+      case 'month': {
+        const monthStart = startOfMonth(startDate);
+        const startDays = differenceInDays(baselineStart, monthStart);
+        const endDays = differenceInDays(baselineDate, monthStart);
+        pixelsPerDay = columnWidth / 30;
+        startOffset = startDays * pixelsPerDay;
+        endOffset = (endDays + 1) * pixelsPerDay;
+        const totalWidth = unitsToShow * columnWidth;
+        if (endOffset < 0 || startOffset >= totalWidth) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(totalWidth, endOffset);
+        return { left: visibleStart, width: Math.max(visibleEnd - visibleStart, 15) };
+      }
+      default: {
+        startOffset = differenceInDays(baselineStart, startDate);
+        endOffset = differenceInDays(baselineDate, startDate);
+        if (endOffset < 0 || startOffset >= unitsToShow) return null;
+        const visibleStart = Math.max(0, startOffset);
+        const visibleEnd = Math.min(unitsToShow - 1, endOffset);
+        const width = (visibleEnd - visibleStart + 1) * columnWidth;
+        const left = visibleStart * columnWidth;
+        return { left, width: Math.max(width, 30) };
       }
     }
   }, [startDate, unitsToShow, columnWidth, zoomLevel]);
@@ -744,6 +797,7 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
               {/* Task rows */}
               {projectTasks.map((task) => {
                 const style = getTaskStyle(task);
+                const baselineStyle = showBaseline ? getBaselineStyle(task) : null;
                 const taskDeps = dependencies?.filter(d => d.task_id === task.id) || [];
                 
                 return (
@@ -809,7 +863,36 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
                         );
                       })}
 
-                      {/* Task bar */}
+                      {/* Baseline bar (ghost/planned) */}
+                      {showBaseline && baselineStyle && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div
+                              className="absolute h-5 rounded border-2 border-dashed border-muted-foreground/40 bg-muted/20"
+                              style={{
+                                left: baselineStyle.left,
+                                top: taskBarTop + 1,
+                                width: Math.max(baselineStyle.width, 30),
+                              }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-medium text-muted-foreground">Baseline (Planned)</p>
+                              <p className="text-xs text-muted-foreground">
+                                Due: {task.baseline_due_date ? format(parseISO(task.baseline_due_date), 'MMM d, yyyy') : 'N/A'}
+                              </p>
+                              {task.baseline_estimated_hours && (
+                                <p className="text-xs text-muted-foreground">
+                                  Est: {task.baseline_estimated_hours}h
+                                </p>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {/* Actual task bar */}
                       {style && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -845,6 +928,22 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day' }: Gan
                               <p className="text-xs capitalize">
                                 {task.priority} priority • {task.status}
                               </p>
+                              {showBaseline && task.baseline_due_date && task.due_date && (
+                                <p className={cn(
+                                  "text-xs font-medium",
+                                  parseISO(task.due_date) > parseISO(task.baseline_due_date) 
+                                    ? "text-red-400" 
+                                    : parseISO(task.due_date) < parseISO(task.baseline_due_date)
+                                    ? "text-emerald-400"
+                                    : "text-muted-foreground"
+                                )}>
+                                  {parseISO(task.due_date) > parseISO(task.baseline_due_date) 
+                                    ? `⚠️ ${Math.ceil((parseISO(task.due_date).getTime() - parseISO(task.baseline_due_date).getTime()) / (1000 * 60 * 60 * 24))} days behind schedule`
+                                    : parseISO(task.due_date) < parseISO(task.baseline_due_date)
+                                    ? `✓ ${Math.ceil((parseISO(task.baseline_due_date).getTime() - parseISO(task.due_date).getTime()) / (1000 * 60 * 60 * 24))} days ahead`
+                                    : "On schedule"}
+                                </p>
+                              )}
                               {taskDeps.length > 0 && (
                                 <p className="text-xs text-copper">
                                   Has {taskDeps.length} prerequisite{taskDeps.length > 1 ? 's' : ''}
