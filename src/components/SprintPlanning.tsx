@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssignTaskToSprint, Sprint } from '@/hooks/useSprints';
 import { useTasks, Task } from '@/hooks/useTasks';
+import SprintBurndown from '@/components/SprintBurndown';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, Plus, Target, Clock, CheckCircle2, Circle, PlayCircle, Trash2, GripVertical, ArrowRight } from 'lucide-react';
+import { Calendar, Plus, Target, Clock, CheckCircle2, Circle, PlayCircle, Trash2, GripVertical, ArrowRight, TrendingDown } from 'lucide-react';
 import { format, parseISO, differenceInDays, isWithinInterval, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -323,9 +324,20 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Burndown Chart for Active Sprints */}
+                {isActive && tasks && (
+                  <SprintBurndown sprint={sprint} tasks={tasks} />
+                )}
+
                 {/* Sprint Tasks */}
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">Sprint Tasks</span>
+                    <Badge variant="outline" className="text-xs">
+                      {tasksBySprint[sprint.id]?.length || 0} tasks
+                    </Badge>
+                  </div>
                   {tasksBySprint[sprint.id]?.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border/50 rounded-lg">
                       <p className="text-sm">Drag tasks here to add to sprint</p>
