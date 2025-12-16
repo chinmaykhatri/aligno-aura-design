@@ -4,6 +4,7 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
 import SprintRetrospective from '@/components/SprintRetrospective';
+import SprintReportGenerator from '@/components/SprintReportGenerator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -286,6 +287,9 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {tasks && (
+                      <SprintReportGenerator sprint={sprint} tasks={tasks} />
+                    )}
                     {sprint.status === 'planning' && (
                       <Button
                         size="sm"
@@ -419,9 +423,14 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                         {format(parseISO(sprint.start_date), 'MMM d')} - {format(parseISO(sprint.end_date), 'MMM d')}
                       </span>
                     </div>
-                    <Badge className="bg-blue-500/20 text-blue-400">
-                      {getSprintStats(sprint.id).completed} tasks completed
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {tasks && (
+                        <SprintReportGenerator sprint={sprint} tasks={tasks} />
+                      )}
+                      <Badge className="bg-blue-500/20 text-blue-400">
+                        {getSprintStats(sprint.id).completed} tasks completed
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
