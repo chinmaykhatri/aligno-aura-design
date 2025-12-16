@@ -178,6 +178,11 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
                               {task.tracked_hours || 0}h / {task.estimated_hours || 0}h
                             </span>
                           )}
+                          {task.story_points && (
+                            <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">
+                              {task.story_points} SP
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

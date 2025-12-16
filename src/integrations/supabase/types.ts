@@ -486,6 +486,7 @@ export type Database = {
           assigned_to: string | null
           baseline_due_date: string | null
           baseline_estimated_hours: number | null
+          baseline_story_points: number | null
           created_at: string
           description: string | null
           due_date: string | null
@@ -495,6 +496,7 @@ export type Database = {
           project_id: string
           sprint_id: string | null
           status: string
+          story_points: number | null
           title: string
           tracked_hours: number | null
           updated_at: string
@@ -504,6 +506,7 @@ export type Database = {
           assigned_to?: string | null
           baseline_due_date?: string | null
           baseline_estimated_hours?: number | null
+          baseline_story_points?: number | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -513,6 +516,7 @@ export type Database = {
           project_id: string
           sprint_id?: string | null
           status?: string
+          story_points?: number | null
           title: string
           tracked_hours?: number | null
           updated_at?: string
@@ -522,6 +526,7 @@ export type Database = {
           assigned_to?: string | null
           baseline_due_date?: string | null
           baseline_estimated_hours?: number | null
+          baseline_story_points?: number | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -531,6 +536,7 @@ export type Database = {
           project_id?: string
           sprint_id?: string | null
           status?: string
+          story_points?: number | null
           title?: string
           tracked_hours?: number | null
           updated_at?: string

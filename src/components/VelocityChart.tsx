@@ -29,20 +29,31 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
       .filter(s => s.status === 'completed' || s.status === 'active')
       .sort((a, b) => parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime());
 
+    // Determine measurement type: prefer story points, then hours, then task count
+    const hasStoryPoints = tasks.some(t => t.story_points && t.story_points > 0);
+    const hasHours = tasks.some(t => t.estimated_hours && t.estimated_hours > 0);
+    const measurementType = hasStoryPoints ? 'points' : hasHours ? 'hours' : 'tasks';
+
     const data: VelocityDataPoint[] = relevantSprints.map(sprint => {
       const sprintTasks = tasks.filter(t => t.sprint_id === sprint.id);
       
-      // Calculate committed (all tasks in sprint) and completed
-      const useHours = sprintTasks.some(t => t.estimated_hours && t.estimated_hours > 0);
+      let committed: number;
+      let completed: number;
       
-      const committed = useHours
-        ? sprintTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0)
-        : sprintTasks.length;
-      
-      const completedTasks = sprintTasks.filter(t => t.status === 'completed');
-      const completed = useHours
-        ? completedTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0)
-        : completedTasks.length;
+      if (measurementType === 'points') {
+        committed = sprintTasks.reduce((sum, t) => sum + (t.story_points || 0), 0);
+        completed = sprintTasks
+          .filter(t => t.status === 'completed')
+          .reduce((sum, t) => sum + (t.story_points || 0), 0);
+      } else if (measurementType === 'hours') {
+        committed = sprintTasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+        completed = sprintTasks
+          .filter(t => t.status === 'completed')
+          .reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+      } else {
+        committed = sprintTasks.length;
+        completed = sprintTasks.filter(t => t.status === 'completed').length;
+      }
 
       const completionRate = committed > 0 ? Math.round((completed / committed) * 100) : 0;
 
@@ -56,7 +67,7 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
       };
     });
 
-    return { data, useHours: tasks.some(t => t.estimated_hours && t.estimated_hours > 0) };
+    return { data, measurementType };
   }, [sprints, tasks]);
 
   // Calculate statistics
@@ -109,10 +120,19 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
     };
   }, [velocityData, sprints]);
 
+  const getUnitLabel = () => {
+    switch (velocityData.measurementType) {
+      case 'points': return 'SP';
+      case 'hours': return 'h';
+      default: return 'tasks';
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     
     const data = payload[0]?.payload;
+    const unit = getUnitLabel();
     
     return (
       <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
@@ -120,11 +140,11 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-muted-foreground">Committed:</span>
-            <span className="font-medium">{data?.committed} {velocityData.useHours ? 'h' : 'tasks'}</span>
+            <span className="font-medium">{data?.committed} {unit}</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-muted-foreground">Completed:</span>
-            <span className="font-medium text-copper">{data?.completed} {velocityData.useHours ? 'h' : 'tasks'}</span>
+            <span className="font-medium text-copper">{data?.completed} {unit}</span>
           </div>
           <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-muted-foreground">Completion:</span>
@@ -229,7 +249,8 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
                 tickLine={false}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 label={{ 
-                  value: velocityData.useHours ? 'Hours' : 'Tasks', 
+                  value: velocityData.measurementType === 'points' ? 'Story Points' : 
+                         velocityData.measurementType === 'hours' ? 'Hours' : 'Tasks', 
                   angle: -90, 
                   position: 'insideLeft',
                   style: { fill: 'hsl(var(--muted-foreground))', fontSize: 11 }
@@ -287,7 +308,7 @@ const VelocityChart = ({ sprints, tasks }: VelocityChartProps) => {
             <span className="font-medium text-copper">Planning Tip:</span>{' '}
             <span className="text-muted-foreground">
               Based on recent velocity, plan approximately{' '}
-              <span className="font-medium text-foreground">{stats.predictedCapacity} {velocityData.useHours ? 'hours' : 'tasks'}</span>{' '}
+              <span className="font-medium text-foreground">{stats.predictedCapacity} {getUnitLabel()}</span>{' '}
               for the next sprint. Your team completes{' '}
               <span className="font-medium text-foreground">{stats.avgCompletionRate}%</span>{' '}
               of committed work on average.

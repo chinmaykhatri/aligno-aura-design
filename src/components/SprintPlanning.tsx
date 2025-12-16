@@ -70,8 +70,12 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
     const completedHours = sprintTasks
       .filter(t => t.status === 'completed')
       .reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+    const totalPoints = sprintTasks.reduce((sum, t) => sum + (t.story_points || 0), 0);
+    const completedPoints = sprintTasks
+      .filter(t => t.status === 'completed')
+      .reduce((sum, t) => sum + (t.story_points || 0), 0);
 
-    return { total, completed, inProgress, totalHours, completedHours };
+    return { total, completed, inProgress, totalHours, completedHours, totalPoints, completedPoints };
   };
 
   const handleCreateSprint = async () => {
@@ -336,6 +340,9 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                   <Progress value={progress} className="h-2" />
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>{stats.completed}/{stats.total} tasks</span>
+                    {stats.totalPoints > 0 && (
+                      <span className="text-purple-400">{stats.completedPoints}/{stats.totalPoints} SP</span>
+                    )}
                     <span>{stats.completedHours}/{stats.totalHours}h</span>
                     <span className="text-amber-400">{stats.inProgress} in progress</span>
                   </div>
@@ -389,6 +396,11 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                         )}>
                           {task.title}
                         </span>
+                        {task.story_points && (
+                          <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">
+                            {task.story_points} SP
+                          </Badge>
+                        )}
                         {task.estimated_hours && (
                           <Badge variant="outline" className="text-xs">
                             {task.estimated_hours}h
