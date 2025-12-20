@@ -401,6 +401,50 @@ export type Database = {
           },
         ]
       }
+      sprint_templates: {
+        Row: {
+          created_at: string
+          duration_days: number
+          goal_template: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_days?: number
+          goal_template?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number
+          goal_template?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_templates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprints: {
         Row: {
           created_at: string
