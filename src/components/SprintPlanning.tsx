@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssignTaskToSprint, Sprint } from '@/hooks/useSprints';
 import { useTasks, Task } from '@/hooks/useTasks';
+import { useSprintTemplates, useCreateSprintTemplate, useDeleteSprintTemplate, SprintTemplate } from '@/hooks/useSprintTemplates';
 import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
 import SprintRetrospective from '@/components/SprintRetrospective';
@@ -15,7 +16,8 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, Plus, Target, Clock, CheckCircle2, Circle, PlayCircle, Trash2, GripVertical, ArrowRight, TrendingDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, Plus, Target, Clock, CheckCircle2, Circle, PlayCircle, Trash2, GripVertical, ArrowRight, TrendingDown, FileText, Save, Copy } from 'lucide-react';
 import { format, parseISO, differenceInDays, isWithinInterval, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -29,16 +31,24 @@ type TaskWithSprint = Task;
 const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
   const { data: sprints, isLoading: sprintsLoading } = useSprints(projectId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
+  const { data: templates } = useSprintTemplates(projectId);
   const createSprint = useCreateSprint();
   const updateSprint = useUpdateSprint();
   const deleteSprint = useDeleteSprint();
   const assignTask = useAssignTaskToSprint();
+  const createTemplate = useCreateSprintTemplate();
+  const deleteTemplate = useDeleteSprintTemplate();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [newSprintName, setNewSprintName] = useState('');
   const [newSprintGoal, setNewSprintGoal] = useState('');
   const [newSprintStart, setNewSprintStart] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [newSprintEnd, setNewSprintEnd] = useState(format(addDays(new Date(), 14), 'yyyy-MM-dd'));
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateDuration, setNewTemplateDuration] = useState(14);
+  const [newTemplateGoal, setNewTemplateGoal] = useState('');
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
 
   // Group tasks by sprint
@@ -78,6 +88,17 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
     return { total, completed, inProgress, totalHours, completedHours, totalPoints, completedPoints };
   };
 
+  const handleApplyTemplate = (templateId: string) => {
+    const template = templates?.find(t => t.id === templateId);
+    if (template) {
+      setSelectedTemplate(templateId);
+      setNewSprintEnd(format(addDays(new Date(newSprintStart), template.duration_days), 'yyyy-MM-dd'));
+      if (template.goal_template) {
+        setNewSprintGoal(template.goal_template);
+      }
+    }
+  };
+
   const handleCreateSprint = async () => {
     if (!newSprintName.trim()) {
       toast.error('Sprint name is required');
@@ -93,10 +114,41 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
     });
 
     setShowCreateDialog(false);
+    resetSprintForm();
+  };
+
+  const resetSprintForm = () => {
     setNewSprintName('');
     setNewSprintGoal('');
     setNewSprintStart(format(new Date(), 'yyyy-MM-dd'));
     setNewSprintEnd(format(addDays(new Date(), 14), 'yyyy-MM-dd'));
+    setSelectedTemplate('');
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!newTemplateName.trim()) {
+      toast.error('Template name is required');
+      return;
+    }
+
+    await createTemplate.mutateAsync({
+      project_id: projectId,
+      name: newTemplateName,
+      duration_days: newTemplateDuration,
+      goal_template: newTemplateGoal || undefined,
+    });
+
+    setShowTemplateDialog(false);
+    setNewTemplateName('');
+    setNewTemplateDuration(14);
+    setNewTemplateGoal('');
+  };
+
+  const handleDeleteTemplate = async (template: SprintTemplate) => {
+    await deleteTemplate.mutateAsync({
+      id: template.id,
+      projectId: template.project_id,
+    });
   };
 
   const handleStartSprint = async (sprint: Sprint) => {
@@ -174,66 +226,228 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
             Organize tasks into time-boxed iterations
           </p>
         </div>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-copper hover:bg-copper/90">
-              <Plus className="h-4 w-4 mr-2" />
-              New Sprint
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Sprint</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div>
-                <label className="text-sm font-medium">Sprint Name</label>
-                <Input
-                  value={newSprintName}
-                  onChange={(e) => setNewSprintName(e.target.value)}
-                  placeholder="e.g., Sprint 1"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Sprint Goal (optional)</label>
-                <Textarea
-                  value={newSprintGoal}
-                  onChange={(e) => setNewSprintGoal(e.target.value)}
-                  placeholder="What do you want to achieve this sprint?"
-                  className="mt-1"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Start Date</label>
-                  <Input
-                    type="date"
-                    value={newSprintStart}
-                    onChange={(e) => setNewSprintStart(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">End Date</label>
-                  <Input
-                    type="date"
-                    value={newSprintEnd}
-                    onChange={(e) => setNewSprintEnd(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-              <Button 
-                onClick={handleCreateSprint} 
-                className="w-full bg-copper hover:bg-copper/90"
-                disabled={createSprint.isPending}
-              >
-                Create Sprint
+        <div className="flex items-center gap-2">
+          {/* Template Management Dialog */}
+          <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FileText className="h-4 w-4 mr-2" />
+                Templates
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Sprint Templates</DialogTitle>
+              </DialogHeader>
+              <Tabs defaultValue="use" className="pt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="use">Use Template</TabsTrigger>
+                  <TabsTrigger value="create">Create Template</TabsTrigger>
+                </TabsList>
+                <TabsContent value="use" className="space-y-4 pt-4">
+                  {templates && templates.length > 0 ? (
+                    <div className="space-y-2">
+                      {templates.map(template => (
+                        <div 
+                          key={template.id}
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{template.name}</span>
+                              {template.is_default && (
+                                <Badge variant="outline" className="text-xs">Default</Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-3">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {template.duration_days} days
+                              </span>
+                              {template.goal_template && (
+                                <span className="flex items-center gap-1">
+                                  <Target className="h-3 w-3" />
+                                  Goal preset
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                handleApplyTemplate(template.id);
+                                setShowTemplateDialog(false);
+                                setShowCreateDialog(true);
+                              }}
+                            >
+                              <Copy className="h-3 w-3 mr-1" />
+                              Use
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                              onClick={() => handleDeleteTemplate(template)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No templates yet</p>
+                      <p className="text-xs">Create one to speed up sprint creation</p>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="create" className="space-y-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium">Template Name</label>
+                    <Input
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      placeholder="e.g., Standard 2-Week Sprint"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Duration (days)</label>
+                    <Select 
+                      value={String(newTemplateDuration)} 
+                      onValueChange={(v) => setNewTemplateDuration(Number(v))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">1 Week (7 days)</SelectItem>
+                        <SelectItem value="14">2 Weeks (14 days)</SelectItem>
+                        <SelectItem value="21">3 Weeks (21 days)</SelectItem>
+                        <SelectItem value="28">4 Weeks (28 days)</SelectItem>
+                        <SelectItem value="30">1 Month (30 days)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Goal Template (optional)</label>
+                    <Textarea
+                      value={newTemplateGoal}
+                      onChange={(e) => setNewTemplateGoal(e.target.value)}
+                      placeholder="Default goal text for sprints using this template"
+                      className="mt-1"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleCreateTemplate}
+                    className="w-full bg-copper hover:bg-copper/90"
+                    disabled={createTemplate.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Template
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create Sprint Dialog */}
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+            setShowCreateDialog(open);
+            if (!open) resetSprintForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="bg-copper hover:bg-copper/90">
+                <Plus className="h-4 w-4 mr-2" />
+                New Sprint
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Sprint</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                {/* Template Quick Select */}
+                {templates && templates.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium">Use Template</label>
+                    <Select 
+                      value={selectedTemplate} 
+                      onValueChange={handleApplyTemplate}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a template (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map(template => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name} ({template.duration_days} days)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-medium">Sprint Name</label>
+                  <Input
+                    value={newSprintName}
+                    onChange={(e) => setNewSprintName(e.target.value)}
+                    placeholder="e.g., Sprint 1"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Sprint Goal (optional)</label>
+                  <Textarea
+                    value={newSprintGoal}
+                    onChange={(e) => setNewSprintGoal(e.target.value)}
+                    placeholder="What do you want to achieve this sprint?"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Start Date</label>
+                    <Input
+                      type="date"
+                      value={newSprintStart}
+                      onChange={(e) => {
+                        setNewSprintStart(e.target.value);
+                        // Update end date based on template duration if selected
+                        const template = templates?.find(t => t.id === selectedTemplate);
+                        if (template) {
+                          setNewSprintEnd(format(addDays(new Date(e.target.value), template.duration_days), 'yyyy-MM-dd'));
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">End Date</label>
+                    <Input
+                      type="date"
+                      value={newSprintEnd}
+                      onChange={(e) => setNewSprintEnd(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleCreateSprint} 
+                  className="w-full bg-copper hover:bg-copper/90"
+                  disabled={createSprint.isPending}
+                >
+                  Create Sprint
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Velocity Chart */}
