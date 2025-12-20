@@ -363,6 +363,44 @@ export type Database = {
           },
         ]
       }
+      sprint_member_capacity: {
+        Row: {
+          available_hours: number
+          created_at: string
+          id: string
+          notes: string | null
+          sprint_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_hours?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sprint_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_hours?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sprint_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_member_capacity_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprint_retrospectives: {
         Row: {
           category: string

@@ -2,11 +2,13 @@ import { useState, useMemo } from 'react';
 import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssignTaskToSprint, Sprint } from '@/hooks/useSprints';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useSprintTemplates, useCreateSprintTemplate, useDeleteSprintTemplate, SprintTemplate } from '@/hooks/useSprintTemplates';
+import { useProjectMembers } from '@/hooks/useProjectMembers';
 import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
 import SprintRetrospective from '@/components/SprintRetrospective';
 import SprintReportGenerator from '@/components/SprintReportGenerator';
 import SprintComparison from '@/components/SprintComparison';
+import SprintCapacityPlanning from '@/components/SprintCapacityPlanning';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +34,7 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
   const { data: sprints, isLoading: sprintsLoading } = useSprints(projectId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: templates } = useSprintTemplates(projectId);
+  const { data: members } = useProjectMembers(projectId);
   const createSprint = useCreateSprint();
   const updateSprint = useUpdateSprint();
   const deleteSprint = useDeleteSprint();
@@ -563,6 +566,16 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Capacity Planning */}
+                {tasks && members && (
+                  <SprintCapacityPlanning 
+                    sprint={sprint} 
+                    tasks={tasks} 
+                    projectId={projectId}
+                    members={members.map(m => ({ user_id: m.user_id, full_name: m.full_name }))}
+                  />
+                )}
+
                 {/* Burndown Chart for Active Sprints */}
                 {isActive && tasks && (
                   <SprintBurndown sprint={sprint} tasks={tasks} />
