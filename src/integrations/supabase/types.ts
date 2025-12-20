@@ -641,6 +641,50 @@ export type Database = {
           },
         ]
       }
+      team_time_off: {
+        Row: {
+          created_at: string
+          end_date: string
+          hours_per_day: number
+          id: string
+          project_id: string
+          reason: string | null
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          hours_per_day?: number
+          id?: string
+          project_id: string
+          reason?: string | null
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          hours_per_day?: number
+          id?: string
+          project_id?: string
+          reason?: string | null
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_time_off_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
