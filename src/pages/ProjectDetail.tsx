@@ -9,9 +9,10 @@ import { Slider } from "@/components/ui/slider";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TaskList } from "@/components/TaskList";
 import { GoalList } from "@/components/GoalList";
-import ProjectChat from "@/components/ProjectChat";
+import TeamCollaboration from "@/components/TeamCollaboration";
 import SmartScheduling from "@/components/SmartScheduling";
 import { AITaskSuggestions } from "@/components/AITaskSuggestions";
+import { AIPredictiveInsights } from "@/components/AIPredictiveInsights";
 import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
@@ -262,6 +263,12 @@ const ProjectDetail = () => {
                 existingTasks={tasks || []}
               />
 
+              {/* AI Predictive Insights */}
+              <AIPredictiveInsights
+                project={project}
+                tasks={tasks || []}
+              />
+
               {/* Smart Scheduling */}
               <SmartScheduling 
                 projectId={project.id}
@@ -274,8 +281,8 @@ const ProjectDetail = () => {
                 })) || []}
               />
               
-              {/* Team Chat */}
-              <ProjectChat projectId={project.id} />
+              {/* Team Collaboration */}
+              <TeamCollaboration projectId={project.id} projectName={project.name} />
               {/* Team Members */}
               <div className="p-6 rounded-2xl bg-card border border-border/40">
                 <div className="flex items-center justify-between mb-4">
