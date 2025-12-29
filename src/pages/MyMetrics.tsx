@@ -18,6 +18,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
+import { useMyTasks } from '@/hooks/useAllTasks';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import { 
@@ -31,13 +32,16 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, parseISO, isAfter, startOfDay } from 'date-fns';
 
 const MyMetrics = () => {
   const navigate = useNavigate();
-  const { data: projects, isLoading } = useProjects();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: myTasks, isLoading: tasksLoading } = useMyTasks();
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+
+  const isLoading = projectsLoading || tasksLoading;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -48,45 +52,73 @@ const MyMetrics = () => {
           .from('profiles')
           .select('full_name')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
         setUserName(profile?.full_name || 'Team Member');
       }
     };
     fetchUser();
   }, []);
 
-  // Generate mock productivity data
+  // Generate productivity data from real tasks
   const productivityData = useMemo(() => {
+    if (!myTasks) return [];
+    
     const data = [];
     for (let i = 29; i >= 0; i--) {
       const date = subDays(new Date(), i);
+      const dayStart = startOfDay(date);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      
+      // Count tasks completed on this day
+      const tasksOnDay = myTasks.filter(task => {
+        if (!task.updated_at || task.status !== 'completed') return false;
+        const taskDate = parseISO(task.updated_at);
+        return taskDate >= dayStart && taskDate < dayEnd;
+      });
+      
+      const hoursOnDay = tasksOnDay.reduce((sum, t) => sum + (t.tracked_hours || 0), 0);
+      
       data.push({
         date: format(date, 'MMM d'),
-        tasks: Math.floor(Math.random() * 5) + 1,
-        hours: Math.floor(Math.random() * 6) + 2,
+        tasks: tasksOnDay.length,
+        hours: hoursOnDay,
       });
     }
     return data;
-  }, []);
+  }, [myTasks]);
 
-  // Weekly comparison
+  // Weekly comparison from real data
   const weeklyData = useMemo(() => {
-    return [
-      { week: '4 weeks ago', completed: 12, hours: 32 },
-      { week: '3 weeks ago', completed: 15, hours: 38 },
-      { week: '2 weeks ago', completed: 18, hours: 42 },
-      { week: 'Last week', completed: 14, hours: 35 },
-      { week: 'This week', completed: 8, hours: 24 },
-    ];
-  }, []);
+    if (!myTasks) return [];
+    
+    const weeks = [];
+    for (let w = 4; w >= 0; w--) {
+      const weekStart = subDays(new Date(), w * 7 + 6);
+      const weekEnd = subDays(new Date(), w * 7);
+      
+      const tasksInWeek = myTasks.filter(task => {
+        if (!task.updated_at || task.status !== 'completed') return false;
+        const taskDate = parseISO(task.updated_at);
+        return taskDate >= weekStart && taskDate <= weekEnd;
+      });
+      
+      weeks.push({
+        week: w === 0 ? 'This week' : w === 1 ? 'Last week' : `${w} weeks ago`,
+        completed: tasksInWeek.length,
+        hours: tasksInWeek.reduce((sum, t) => sum + (t.tracked_hours || 0), 0),
+      });
+    }
+    return weeks;
+  }, [myTasks]);
 
-  // Calculate metrics
+  // Calculate metrics from real data
   const myProjects = projects?.filter(p => 
     p.members?.some(m => m.user_id === userId)
   ) || [];
 
-  const totalTasks = productivityData.reduce((sum, d) => sum + d.tasks, 0);
-  const totalHours = productivityData.reduce((sum, d) => sum + d.hours, 0);
+  const totalTasks = myTasks?.filter(t => t.status === 'completed').length || 0;
+  const totalHours = myTasks?.reduce((sum, t) => sum + (t.tracked_hours || 0), 0) || 0;
   const avgTasksPerDay = Math.round(totalTasks / 30 * 10) / 10;
   const avgHoursPerDay = Math.round(totalHours / 30 * 10) / 10;
   
@@ -94,8 +126,27 @@ const MyMetrics = () => {
   const lastWeekTasks = productivityData.slice(-14, -7).reduce((sum, d) => sum + d.tasks, 0);
   const tasksTrend = lastWeekTasks > 0 ? Math.round((thisWeekTasks - lastWeekTasks) / lastWeekTasks * 100) : 0;
 
-  // Streak calculation (mock)
-  const currentStreak = Math.floor(Math.random() * 10) + 3;
+  // Calculate streak from real data (consecutive days with completed tasks)
+  const currentStreak = useMemo(() => {
+    if (!productivityData.length) return 0;
+    let streak = 0;
+    for (let i = productivityData.length - 1; i >= 0; i--) {
+      if (productivityData[i].tasks > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [productivityData]);
+
+  // Productivity score based on real metrics
+  const productivityScore = useMemo(() => {
+    if (!myTasks?.length) return 0;
+    const completionRate = myTasks.filter(t => t.status === 'completed').length / myTasks.length;
+    const streakBonus = Math.min(currentStreak * 2, 20);
+    return Math.min(Math.round(completionRate * 80 + streakBonus), 100);
+  }, [myTasks, currentStreak]);
 
   if (isLoading) {
     return (
@@ -195,8 +246,8 @@ const MyMetrics = () => {
                 <Award className="h-4 w-4 text-amber-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">87</div>
-                <Progress value={87} className="h-2 mt-2" />
+                <div className="text-3xl font-bold text-foreground">{productivityScore}</div>
+                <Progress value={productivityScore} className="h-2 mt-2" />
               </CardContent>
             </Card>
           </div>
