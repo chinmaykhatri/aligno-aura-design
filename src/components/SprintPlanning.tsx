@@ -9,6 +9,7 @@ import SprintRetrospective from '@/components/SprintRetrospective';
 import SprintReportGenerator from '@/components/SprintReportGenerator';
 import SprintComparison from '@/components/SprintComparison';
 import SprintCapacityPlanning from '@/components/SprintCapacityPlanning';
+import { SprintForecasting } from '@/components/SprintForecasting';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -579,6 +580,11 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                 {/* Burndown Chart for Active Sprints */}
                 {isActive && tasks && (
                   <SprintBurndown sprint={sprint} tasks={tasks} />
+                )}
+
+                {/* Sprint Forecasting for Active Sprints */}
+                {isActive && tasks && (
+                  <SprintForecasting sprint={sprint} tasks={tasks} projectId={projectId} />
                 )}
 
                 {/* Retrospective for Active Sprints */}

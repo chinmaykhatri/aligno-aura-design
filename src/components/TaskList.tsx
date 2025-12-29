@@ -8,7 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TaskDialog } from '@/components/TaskDialog';
 import { TimeTracker } from '@/components/TimeTracker';
 import { KanbanBoard } from '@/components/KanbanBoard';
-import { Plus, Clock, Calendar, Trash2, Edit2, LayoutList, Kanban } from 'lucide-react';
+import { TaskNavigation } from '@/components/TaskNavigation';
+import { QuickStatusChange } from '@/components/QuickStatusChange';
+import { Plus, Clock, Calendar, Trash2, Edit2, LayoutList, Kanban, Search } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +44,11 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [trackingTask, setTrackingTask] = useState<Task | null>(null);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+
+  const handleSelectTask = (task: Task) => {
+    setEditingTask(task);
+  };
 
   const handleStatusToggle = (task: Task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
@@ -107,6 +114,16 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
             Tasks
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsNavigationOpen(true)}
+              className="gap-2"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Search</span>
+              <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-muted border text-[10px] ml-1">⌘K</kbd>
+            </Button>
             <ToggleGroup
               type="single"
               value={viewMode}
@@ -154,11 +171,9 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
                           <Badge variant="outline" className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
-                          {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                              In Progress
-                            </Badge>
-                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <QuickStatusChange task={task} size="sm" />
                         </div>
                         {task.description && (
                           <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
@@ -292,6 +307,13 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TaskNavigation
+        tasks={tasks || []}
+        open={isNavigationOpen}
+        onOpenChange={setIsNavigationOpen}
+        onSelectTask={handleSelectTask}
+      />
     </>
   );
 };
