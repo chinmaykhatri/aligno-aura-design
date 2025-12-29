@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart, BarChart3, FileText } from "lucide-react";
+import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart, BarChart3, FileText, Users, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,6 +122,15 @@ const Navigation = () => {
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Executive Dashboard
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/team-performance')}>
+                  <Users className="w-4 h-4 mr-2" />
+                  Team Performance
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/my-metrics')}>
+                  <User className="w-4 h-4 mr-2" />
+                  My Metrics
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/reports')}>
                   <FileText className="w-4 h-4 mr-2" />
                   Custom Reports
