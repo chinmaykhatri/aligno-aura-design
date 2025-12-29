@@ -15,6 +15,8 @@ import { AITaskSuggestions } from "@/components/AITaskSuggestions";
 import { AIPredictiveInsights } from "@/components/AIPredictiveInsights";
 import { ClientPortalManager } from "@/components/ClientPortalManager";
 import { IntegrationsManager } from "@/components/IntegrationsManager";
+import RiskRadar from "@/components/RiskRadar";
+import RoadmapView from "@/components/RoadmapView";
 import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
@@ -248,6 +250,9 @@ const ProjectDetail = () => {
               {/* Goals Section */}
               <GoalList projectId={project.id} />
 
+              {/* AI Roadmap */}
+              <RoadmapView projectId={project.id} />
+
               {/* Tasks Section */}
               <TaskList projectId={project.id} isOwner={isOwner} />
 
@@ -257,6 +262,9 @@ const ProjectDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Risk Radar - AI Early Warning */}
+              <RiskRadar projectId={project.id} />
+
               {/* AI Task Suggestions */}
               <AITaskSuggestions
                 projectId={project.id}

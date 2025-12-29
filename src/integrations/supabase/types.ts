@@ -394,6 +394,141 @@ export type Database = {
           },
         ]
       }
+      risk_assessments: {
+        Row: {
+          assessed_at: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          mitigation_actions: Json
+          predicted_slip_days: number | null
+          project_id: string
+          risk_factors: Json
+          risk_level: string
+          risk_score: number
+          sprint_id: string | null
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assessed_at?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          mitigation_actions?: Json
+          predicted_slip_days?: number | null
+          project_id: string
+          risk_factors?: Json
+          risk_level?: string
+          risk_score?: number
+          sprint_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assessed_at?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          mitigation_actions?: Json
+          predicted_slip_days?: number | null
+          project_id?: string
+          risk_factors?: Json
+          risk_level?: string
+          risk_score?: number
+          sprint_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_assessments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_assessments_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_assessments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roadmap_items: {
+        Row: {
+          ai_suggestions: Json | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          lane: string
+          linked_goals: string[] | null
+          linked_sprints: string[] | null
+          linked_tasks: string[] | null
+          priority: number | null
+          project_id: string
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_suggestions?: Json | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          lane?: string
+          linked_goals?: string[] | null
+          linked_sprints?: string[] | null
+          linked_tasks?: string[] | null
+          priority?: number | null
+          project_id: string
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_suggestions?: Json | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          lane?: string
+          linked_goals?: string[] | null
+          linked_sprints?: string[] | null
+          linked_tasks?: string[] | null
+          priority?: number | null
+          project_id?: string
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduling_history: {
         Row: {
           action_type: string

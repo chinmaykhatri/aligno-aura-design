@@ -14,3 +14,9 @@ verify_jwt = true
 
 [functions.client-portal]
 verify_jwt = false
+
+[functions.risk-analysis]
+verify_jwt = true
+
+[functions.roadmap-ai]
+verify_jwt = true
