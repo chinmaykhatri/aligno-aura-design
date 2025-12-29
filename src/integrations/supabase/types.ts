@@ -235,6 +235,44 @@ export type Database = {
         }
         Relationships: []
       }
+      project_integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          integration_type: string
+          is_active: boolean
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_type: string
+          is_active?: boolean
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_integrations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string

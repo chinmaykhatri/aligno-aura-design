@@ -14,6 +14,7 @@ import SmartScheduling from "@/components/SmartScheduling";
 import { AITaskSuggestions } from "@/components/AITaskSuggestions";
 import { AIPredictiveInsights } from "@/components/AIPredictiveInsights";
 import { ClientPortalManager } from "@/components/ClientPortalManager";
+import { IntegrationsManager } from "@/components/IntegrationsManager";
 import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
@@ -346,6 +347,9 @@ const ProjectDetail = () => {
 
               {/* Client Portal */}
               <ClientPortalManager projectId={project.id} isOwner={isOwner} />
+
+              {/* Integrations */}
+              <IntegrationsManager projectId={project.id} projectName={project.name} isOwner={isOwner} />
 
               {/* Metadata */}
               <div className="p-6 rounded-2xl bg-card border border-border/40">

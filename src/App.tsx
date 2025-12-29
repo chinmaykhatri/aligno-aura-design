@@ -18,6 +18,8 @@ import Gantt from "./pages/Gantt";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import Reports from "./pages/Reports";
 import ClientPortal from "./pages/ClientPortal";
+import TeamPerformance from "./pages/TeamPerformance";
+import MyMetrics from "./pages/MyMetrics";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/executive" element={<ExecutiveDashboard />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/portal/:token" element={<ClientPortal />} />
+              <Route path="/team-performance" element={<TeamPerformance />} />
+              <Route path="/my-metrics" element={<MyMetrics />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
