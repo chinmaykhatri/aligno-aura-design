@@ -3,6 +3,8 @@ import { useSprints, useCreateSprint, useUpdateSprint, useDeleteSprint, useAssig
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useSprintTemplates, useCreateSprintTemplate, useDeleteSprintTemplate, SprintTemplate } from '@/hooks/useSprintTemplates';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useRetrospectives } from '@/hooks/useRetrospectives';
+import { useHistoricalVelocity } from '@/hooks/useSprintCapacity';
 import SprintBurndown from '@/components/SprintBurndown';
 import VelocityChart from '@/components/VelocityChart';
 import SprintRetrospective from '@/components/SprintRetrospective';
@@ -10,6 +12,8 @@ import SprintReportGenerator from '@/components/SprintReportGenerator';
 import SprintComparison from '@/components/SprintComparison';
 import SprintCapacityPlanning from '@/components/SprintCapacityPlanning';
 import { SprintForecasting } from '@/components/SprintForecasting';
+import { SprintRecommendations } from '@/components/SprintRecommendations';
+import { RetrospectiveInsights } from '@/components/RetrospectiveInsights';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +40,7 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
   const { data: tasks, isLoading: tasksLoading } = useTasks(projectId);
   const { data: templates } = useSprintTemplates(projectId);
   const { data: members } = useProjectMembers(projectId);
+  const { data: velocityData } = useHistoricalVelocity(projectId);
   const createSprint = useCreateSprint();
   const updateSprint = useUpdateSprint();
   const deleteSprint = useDeleteSprint();
@@ -590,6 +595,15 @@ const SprintPlanning = ({ projectId }: SprintPlanningProps) => {
                 {/* Retrospective for Active Sprints */}
                 {isActive && (
                   <SprintRetrospective sprint={sprint} />
+                )}
+
+                {/* Sprint AI Recommendations */}
+                {(sprint.status === 'planning' || isActive) && tasks && (
+                  <SprintRecommendations 
+                    sprint={sprint} 
+                    tasks={tasks} 
+                    velocity={velocityData}
+                  />
                 )}
 
                 {/* Sprint Tasks */}

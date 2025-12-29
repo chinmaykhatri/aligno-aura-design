@@ -11,6 +11,8 @@ import { TaskList } from "@/components/TaskList";
 import { GoalList } from "@/components/GoalList";
 import ProjectChat from "@/components/ProjectChat";
 import SmartScheduling from "@/components/SmartScheduling";
+import { AITaskSuggestions } from "@/components/AITaskSuggestions";
+import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
   SelectContent,
@@ -47,6 +49,7 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id);
   const { data: tasks } = useTasks(id);
+  const { goals } = useGoals(id || '');
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
   const removeMember = useRemoveProjectMember();
@@ -251,6 +254,14 @@ const ProjectDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* AI Task Suggestions */}
+              <AITaskSuggestions
+                projectId={project.id}
+                projectName={project.name}
+                goals={goals}
+                existingTasks={tasks || []}
+              />
+
               {/* Smart Scheduling */}
               <SmartScheduling 
                 projectId={project.id}

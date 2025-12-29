@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Sprint } from '@/hooks/useSprints';
 import { useRetrospectives, useCreateRetrospective, useUpdateRetrospective, useDeleteRetrospective, RetroCategory } from '@/hooks/useRetrospectives';
+import { RetrospectiveInsights } from '@/components/RetrospectiveInsights';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -283,6 +284,14 @@ const SprintRetrospective = ({ sprint }: SprintRetrospectiveProps) => {
         )}
       </CardContent>
     </Card>
+
+    {/* AI Retrospective Analysis */}
+    <RetrospectiveInsights
+      sprintId={sprint.id}
+      sprintName={sprint.name}
+      retrospectives={retrospectives || []}
+    />
+  </>
   );
 };
 
