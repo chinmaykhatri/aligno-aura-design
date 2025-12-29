@@ -17,6 +17,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
+import { useAllTasks } from '@/hooks/useAllTasks';
 import Navigation from '@/components/Navigation';
 import { 
   BarChart, 
@@ -46,41 +47,55 @@ interface TeamMemberStats {
 
 const TeamPerformance = () => {
   const navigate = useNavigate();
-  const { data: projects, isLoading } = useProjects();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: allTasks, isLoading: tasksLoading } = useAllTasks();
 
-  // Aggregate team member stats across all projects
+  const isLoading = projectsLoading || tasksLoading;
+
+  // Aggregate team member stats across all projects using real task data
   const teamStats = useMemo(() => {
-    if (!projects) return [];
+    if (!projects || !allTasks) return [];
 
     const memberMap = new Map<string, TeamMemberStats>();
 
+    // First, gather all team members from projects
     projects.forEach(project => {
       project.members?.forEach(member => {
-        const existing = memberMap.get(member.user_id) || {
-          userId: member.user_id,
-          name: member.profiles?.full_name || 'Unknown',
-          tasksCompleted: 0,
-          tasksAssigned: 0,
-          completionRate: 0,
-          hoursTracked: 0,
-          projectsCount: 0,
-        };
-
+        if (!memberMap.has(member.user_id)) {
+          memberMap.set(member.user_id, {
+            userId: member.user_id,
+            name: member.profiles?.full_name || 'Unknown',
+            tasksCompleted: 0,
+            tasksAssigned: 0,
+            completionRate: 0,
+            hoursTracked: 0,
+            projectsCount: 0,
+          });
+        }
+        const existing = memberMap.get(member.user_id)!;
         existing.projectsCount += 1;
-        // Simulated data - in real app would come from tasks table
-        existing.tasksAssigned += Math.floor(Math.random() * 15) + 5;
-        existing.tasksCompleted += Math.floor(Math.random() * 10) + 3;
-        existing.hoursTracked += Math.floor(Math.random() * 40) + 20;
-
         memberMap.set(member.user_id, existing);
       });
+    });
+
+    // Now aggregate task data
+    allTasks.forEach(task => {
+      if (task.assigned_to && memberMap.has(task.assigned_to)) {
+        const member = memberMap.get(task.assigned_to)!;
+        member.tasksAssigned += 1;
+        if (task.status === 'completed') {
+          member.tasksCompleted += 1;
+        }
+        member.hoursTracked += task.tracked_hours || 0;
+        memberMap.set(task.assigned_to, member);
+      }
     });
 
     return Array.from(memberMap.values()).map(m => ({
       ...m,
       completionRate: m.tasksAssigned > 0 ? Math.round((m.tasksCompleted / m.tasksAssigned) * 100) : 0,
     }));
-  }, [projects]);
+  }, [projects, allTasks]);
 
   // Workload distribution data
   const workloadData = useMemo(() => {
