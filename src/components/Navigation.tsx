@@ -2,19 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart } from "lucide-react";
+import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart, BarChart3, FileText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar", "/gantt"].some(route => 
+  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar", "/gantt", "/executive", "/reports"].some(route => 
     location.pathname.startsWith(route)
   );
 
@@ -102,6 +103,31 @@ const Navigation = () => {
               <Calendar className="w-4 h-4" />
               Calendar
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className={`text-sm transition-smooth flex items-center gap-2 ${
+                    location.pathname === "/executive" || location.pathname === "/reports"
+                      ? "text-copper font-medium" 
+                      : "text-muted-foreground hover:text-copper"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/executive')}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Executive Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/reports')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Custom Reports
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">

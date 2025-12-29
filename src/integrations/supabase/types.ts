@@ -73,6 +73,56 @@ export type Database = {
         }
         Relationships: []
       }
+      client_portal_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_viewed_at: string | null
+          name: string
+          project_id: string
+          token: string
+          updated_at: string
+          user_id: string
+          views_count: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          name?: string
+          project_id: string
+          token?: string
+          updated_at?: string
+          user_id: string
+          views_count?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_viewed_at?: string | null
+          name?: string
+          project_id?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_tokens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           created_at: string

@@ -13,6 +13,7 @@ import TeamCollaboration from "@/components/TeamCollaboration";
 import SmartScheduling from "@/components/SmartScheduling";
 import { AITaskSuggestions } from "@/components/AITaskSuggestions";
 import { AIPredictiveInsights } from "@/components/AIPredictiveInsights";
+import { ClientPortalManager } from "@/components/ClientPortalManager";
 import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
@@ -342,6 +343,9 @@ const ProjectDetail = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Client Portal */}
+              <ClientPortalManager projectId={project.id} isOwner={isOwner} />
 
               {/* Metadata */}
               <div className="p-6 rounded-2xl bg-card border border-border/40">

@@ -17,6 +17,7 @@ import Calendar from "./pages/Calendar";
 import Gantt from "./pages/Gantt";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import Reports from "./pages/Reports";
+import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/gantt" element={<Gantt />} />
               <Route path="/executive" element={<ExecutiveDashboard />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/portal/:token" element={<ClientPortal />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
