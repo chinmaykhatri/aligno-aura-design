@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import LogoCloud from "@/components/LogoCloud";
 import ProjectManagement from "@/components/ProjectManagement";
 import BentoGrid from "@/components/BentoGrid";
+import TryAligno from "@/components/TryAligno";
 import CTASection from "@/components/CTASection";
 import FeatureSummary from "@/components/FeatureSummary";
 import Comparison from "@/components/Comparison";
@@ -21,6 +22,7 @@ const Index = () => {
         <LogoCloud />
         <ProjectManagement />
         <BentoGrid />
+        <TryAligno />
         <CTASection />
         <FeatureSummary />
         <Comparison />
