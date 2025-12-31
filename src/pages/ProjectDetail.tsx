@@ -386,6 +386,10 @@ const ProjectDetail = () => {
                   role: m.role
                 })) || []}
               />
+
+              {/* Smart Scheduling */}
+              <SmartScheduling 
+                projectId={project.id}
                 projectName={project.name}
                 tasks={tasks || []}
                 teamMembers={project.members?.map(m => ({
