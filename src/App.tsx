@@ -20,6 +20,7 @@ import Reports from "./pages/Reports";
 import ClientPortal from "./pages/ClientPortal";
 import TeamPerformance from "./pages/TeamPerformance";
 import MyMetrics from "./pages/MyMetrics";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/portal/:token" element={<ClientPortal />} />
               <Route path="/team-performance" element={<TeamPerformance />} />
               <Route path="/my-metrics" element={<MyMetrics />} />
+              <Route path="/portfolio" element={<Portfolio />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

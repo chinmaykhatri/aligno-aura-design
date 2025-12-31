@@ -20,3 +20,9 @@ verify_jwt = true
 
 [functions.roadmap-ai]
 verify_jwt = true
+
+[functions.executive-report]
+verify_jwt = true
+
+[functions.natural-language-query]
+verify_jwt = true
