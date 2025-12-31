@@ -61,6 +61,17 @@ const AICapacityForecaster = ({ projectId, tasks, teamMembers }: AICapacityForec
   const [forecastMonths, setForecastMonths] = useState(6);
   const { data: timeOff } = useTeamTimeOff(projectId);
 
+  const getSeasonalFactor = (month: number): number => {
+    // Lower capacity during holiday months
+    const seasonalFactors: Record<number, number> = {
+      0: 0.9,  // January
+      6: 0.85, // July
+      7: 0.85, // August
+      11: 0.8, // December
+    };
+    return seasonalFactors[month] || 1;
+  };
+
   const generateForecast = useMemo(() => {
     const today = new Date();
     const forecast: ForecastData[] = [];
@@ -108,17 +119,6 @@ const AICapacityForecaster = ({ projectId, tasks, teamMembers }: AICapacityForec
 
     return forecast;
   }, [tasks, teamMembers, timeOff, forecastMonths]);
-
-  const getSeasonalFactor = (month: number): number => {
-    // Lower capacity during holiday months
-    const seasonalFactors: Record<number, number> = {
-      0: 0.9,  // January
-      6: 0.85, // July
-      7: 0.85, // August
-      11: 0.8, // December
-    };
-    return seasonalFactors[month] || 1;
-  };
 
   const hiringRecommendations = useMemo((): HiringRecommendation[] => {
     const recommendations: HiringRecommendation[] = [];
