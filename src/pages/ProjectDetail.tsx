@@ -25,6 +25,9 @@ import AutomaticRiskRegister from "@/components/AutomaticRiskRegister";
 import GoalDrivenAgent from "@/components/GoalDrivenAgent";
 import SelfHealingSchedule from "@/components/SelfHealingSchedule";
 import AISprintAutoPlanner from "@/components/AISprintAutoPlanner";
+import WhatIfSimulator from "@/components/WhatIfSimulator";
+import AICapacityForecaster from "@/components/AICapacityForecaster";
+import SkillAwareAssignment from "@/components/SkillAwareAssignment";
 import { useGoals } from "@/hooks/useGoals";
 import { useSprints } from "@/hooks/useSprints";
 import {
@@ -339,9 +342,50 @@ const ProjectDetail = () => {
                 currentSprintId={sprints?.find(s => s.status === 'active')?.id}
               />
 
+              {/* What-If Simulator */}
+              <WhatIfSimulator 
+                projectId={project.id}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+
+              {/* AI Capacity Forecaster */}
+              <AICapacityForecaster 
+                projectId={project.id}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+
+              {/* Skill-Aware Assignment */}
+              <SkillAwareAssignment 
+                projectId={project.id}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+
               {/* Smart Scheduling */}
               <SmartScheduling 
                 projectId={project.id}
+                projectName={project.name}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
                 projectName={project.name}
                 tasks={tasks || []}
                 teamMembers={project.members?.map(m => ({
