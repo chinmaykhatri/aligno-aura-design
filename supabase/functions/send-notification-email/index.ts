@@ -46,7 +46,7 @@ function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; r
   return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetTime - now };
 }
 
-type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied";
+type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied" | "executive_report";
 
 interface NotificationRequest {
   type: NotificationType;
@@ -78,7 +78,7 @@ function validateRequest(req: unknown): { valid: true; data: NotificationRequest
 
   const { type, recipientEmail, recipientName, data } = req as Record<string, unknown>;
 
-  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest', 'scheduling_applied'];
+  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest', 'scheduling_applied', 'executive_report'];
   if (!type || !validTypes.includes(type as NotificationType)) {
     return { valid: false, error: 'Invalid notification type' };
   }
@@ -216,6 +216,85 @@ const getEmailContent = (type: NotificationType, data: Record<string, unknown>, 
               <p style="color: #4a4a4a; margin: 0; font-size: 14px;">${escapeHtml(String(data.details || ''))}</p>
             </div>
             <p style="color: #888; font-size: 14px;">Applied by: ${escapeHtml(String(data.appliedBy || "Team member"))}</p>
+          </div>
+        `,
+      };
+
+    case "executive_report":
+      const achievements = Array.isArray(data.achievements) ? data.achievements : [];
+      const risks = Array.isArray(data.risks) ? data.risks : [];
+      const recommendations = Array.isArray(data.recommendations) ? data.recommendations : [];
+      
+      const achievementsList = achievements
+        .slice(0, 5)
+        .map((a: unknown) => `<li style="margin: 8px 0; color: #11998e;">✓ ${escapeHtml(String(a))}</li>`)
+        .join("");
+      
+      const risksList = risks
+        .slice(0, 4)
+        .map((r: unknown) => {
+          const riskText = typeof r === 'string' ? r : (r as Record<string, unknown>).text || '';
+          const severity = typeof r === 'object' ? (r as Record<string, unknown>).severity || 'medium' : 'medium';
+          const color = severity === 'high' ? '#f5576c' : severity === 'medium' ? '#f093fb' : '#667eea';
+          return `<li style="margin: 8px 0; color: ${color};">⚠ ${escapeHtml(String(riskText))}</li>`;
+        })
+        .join("");
+      
+      const recommendationsList = recommendations
+        .slice(0, 5)
+        .map((r: unknown, i: number) => `<li style="margin: 8px 0; color: #4a4a4a;">${i + 1}. ${escapeHtml(String(r))}</li>`)
+        .join("");
+
+      return {
+        subject: `Executive Report: ${escapeHtml(String(data.period || 'Weekly'))} Summary`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1a1a2e; margin-bottom: 20px;">📊 Executive Report</h1>
+            <p style="color: #888; font-size: 14px; margin-bottom: 20px;">${escapeHtml(String(data.period || 'Weekly'))} Summary • Generated ${new Date().toLocaleDateString()}</p>
+            
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea;">
+              <h3 style="color: #1a1a2e; margin: 0 0 10px;">Summary</h3>
+              <p style="color: #4a4a4a; margin: 0; font-size: 14px; line-height: 1.6;">${escapeHtml(String(data.summary || ''))}</p>
+            </div>
+
+            ${achievementsList ? `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #11998e; margin: 0 0 10px;">🎯 Key Achievements</h3>
+              <ul style="padding-left: 0; margin: 0; list-style: none;">${achievementsList}</ul>
+            </div>
+            ` : ''}
+
+            ${risksList ? `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #f5576c; margin: 0 0 10px;">⚠️ Risks & Blockers</h3>
+              <ul style="padding-left: 0; margin: 0; list-style: none;">${risksList}</ul>
+            </div>
+            ` : ''}
+
+            ${data.velocityInsight ? `
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="color: rgba(255,255,255,0.8); margin: 0 0 5px; font-size: 12px; text-transform: uppercase;">Velocity Insight</p>
+              <p style="color: white; margin: 0; font-size: 14px;">${escapeHtml(String(data.velocityInsight))}</p>
+            </div>
+            ` : ''}
+
+            ${recommendationsList ? `
+            <div style="margin: 20px 0;">
+              <h3 style="color: #1a1a2e; margin: 0 0 10px;">💡 Recommendations</h3>
+              <ul style="padding-left: 0; margin: 0; list-style: none;">${recommendationsList}</ul>
+            </div>
+            ` : ''}
+
+            ${data.outlook ? `
+            <div style="background: #e8f5e9; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #11998e;">
+              <h3 style="color: #11998e; margin: 0 0 10px;">🔮 Outlook</h3>
+              <p style="color: #4a4a4a; margin: 0; font-size: 14px;">${escapeHtml(String(data.outlook))}</p>
+            </div>
+            ` : ''}
+
+            <p style="color: #888; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+              This report was generated by Aligno AI. For questions, contact your project administrator.
+            </p>
           </div>
         `,
       };

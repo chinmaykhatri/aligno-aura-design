@@ -17,6 +17,7 @@ import { ClientPortalManager } from "@/components/ClientPortalManager";
 import { IntegrationsManager } from "@/components/IntegrationsManager";
 import RiskRadar from "@/components/RiskRadar";
 import RoadmapView from "@/components/RoadmapView";
+import OKRManager from "@/components/OKRManager";
 import { useGoals } from "@/hooks/useGoals";
 import {
   Select,
@@ -249,6 +250,9 @@ const ProjectDetail = () => {
 
               {/* Goals Section */}
               <GoalList projectId={project.id} />
+
+              {/* OKRs - Objectives & Key Results */}
+              <OKRManager projectId={project.id} />
 
               {/* AI Roadmap */}
               <RoadmapView projectId={project.id} />
