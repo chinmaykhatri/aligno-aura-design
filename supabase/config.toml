@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.natural-language-query]
 verify_jwt = true
+
+[functions.extract-action-items]
+verify_jwt = true
