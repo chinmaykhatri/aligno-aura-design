@@ -31,6 +31,7 @@ import SkillAwareAssignment from "@/components/SkillAwareAssignment";
 import TeamMoodScanner from "@/components/TeamMoodScanner";
 import AIProjectHistorian from "@/components/AIProjectHistorian";
 import DocumentIngestion from "@/components/DocumentIngestion";
+import MeetingTranscription from "@/components/MeetingTranscription";
 import { useGoals } from "@/hooks/useGoals";
 import { useSprints } from "@/hooks/useSprints";
 import {
@@ -399,6 +400,9 @@ const ProjectDetail = () => {
                 projectId={project.id}
                 projectName={project.name}
               />
+
+              {/* Meeting Transcription */}
+              <MeetingTranscription projectId={project.id} />
 
               {/* Document Ingestion */}
               <DocumentIngestion projectId={project.id} />
