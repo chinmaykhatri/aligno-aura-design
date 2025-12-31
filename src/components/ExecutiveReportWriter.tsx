@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   Select,
   SelectContent,
@@ -10,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { 
   FileText, 
   Download, 
@@ -19,18 +28,25 @@ import {
   AlertTriangle,
   CheckCircle,
   Lightbulb,
-  RefreshCw
+  RefreshCw,
+  Send
 } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useAllTasks } from '@/hooks/useAllTasks';
 import { useSprints } from '@/hooks/useSprints';
 import { useExecutiveReport } from '@/hooks/useExecutiveReport';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 
 const ExecutiveReportWriter = () => {
   const [dateRange, setDateRange] = useState<string>('week');
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  
   const { data: projects } = useProjects();
   const { data: tasks } = useAllTasks();
   const { toast } = useToast();
@@ -123,11 +139,73 @@ const ExecutiveReportWriter = () => {
     toast({ title: 'Report exported as PDF' });
   };
 
-  const handleEmailReport = () => {
-    toast({
-      title: 'Email feature',
-      description: 'Email integration would send this report to stakeholders.',
-    });
+  const handleEmailReport = async () => {
+    if (!report || !recipientEmail) return;
+    
+    setIsSending(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to send email reports.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const dateRangeText = dateRange === 'week' ? 'Weekly' : 
+                            dateRange === 'month' ? 'Monthly' : 
+                            dateRange === 'quarter' ? 'Quarterly' : 'Yearly';
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-notification-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            type: 'executive_report',
+            recipientEmail,
+            recipientName: recipientName || undefined,
+            data: {
+              period: dateRangeText,
+              summary: report.summary,
+              achievements: report.achievements,
+              risks: report.risks,
+              velocityInsight: report.velocityInsight,
+              recommendations: report.recommendations,
+              outlook: report.outlook,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      toast({
+        title: 'Report sent!',
+        description: `Executive report emailed to ${recipientEmail}`,
+      });
+      
+      setEmailDialogOpen(false);
+      setRecipientEmail('');
+      setRecipientName('');
+    } catch (error) {
+      console.error('Email send error:', error);
+      toast({
+        title: 'Failed to send email',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -184,10 +262,52 @@ const ExecutiveReportWriter = () => {
                   <Download className="h-4 w-4 mr-2" />
                   Export PDF
                 </Button>
-                <Button variant="outline" onClick={handleEmailReport}>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email Report
-                </Button>
+                <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email Report
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Email Executive Report</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Recipient Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={recipientEmail}
+                          onChange={(e) => setRecipientEmail(e.target.value)}
+                          placeholder="stakeholder@company.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Recipient Name (optional)</Label>
+                        <Input
+                          id="name"
+                          value={recipientName}
+                          onChange={(e) => setRecipientName(e.target.value)}
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleEmailReport} 
+                        disabled={!recipientEmail || isSending}
+                        className="w-full"
+                      >
+                        {isSending ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        Send Report
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </>
             )}
           </div>
