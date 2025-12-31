@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ArrowRight, Sparkles, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroDashboard from "@/assets/hero-dashboard.jpg";
 import DemoPresentation from "@/components/DemoPresentation";
+import DemoTeaser from "@/components/DemoTeaser";
 
 const Hero = () => {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
@@ -41,40 +41,14 @@ const Hero = () => {
               onClick={() => setIsDemoOpen(true)}
             >
               <Play className="mr-2 w-5 h-5" />
-              Watch Demo
+              Watch Full Demo
             </Button>
           </div>
         </div>
         
-          <div className="mt-20 max-w-6xl mx-auto animate-fade-in" style={{ animationDelay: '0.3s', opacity: 0, animationFillMode: 'forwards' }}>
-            <div className="relative rounded-2xl overflow-hidden border border-copper/20 shadow-2xl glow-copper">
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent z-10" />
-              <img 
-                src={heroDashboard} 
-                alt="Aligno Dashboard Preview" 
-                width="1920"
-                height="1080"
-                fetchPriority="high"
-                className="w-full h-auto opacity-70 blur-[2px]"
-              />
-            <div className="absolute bottom-6 left-6 right-6 z-20 flex flex-wrap gap-3">
-              <div className="px-4 py-2 rounded-lg bg-secondary/80 backdrop-blur-md border border-copper/20 text-sm">
-                List View
-              </div>
-              <div className="px-4 py-2 rounded-lg bg-secondary/80 backdrop-blur-md border border-copper/20 text-sm">
-                Kanban
-              </div>
-              <div className="px-4 py-2 rounded-lg bg-secondary/80 backdrop-blur-md border border-copper/20 text-sm">
-                Calendar
-              </div>
-              <div className="px-4 py-2 rounded-lg bg-copper/20 backdrop-blur-md border border-copper/40 text-sm">
-                Filter (1)
-              </div>
-              <div className="ml-auto px-4 py-2 rounded-lg bg-gradient-copper text-deep-black font-medium text-sm">
-                Add Task
-              </div>
-            </div>
-          </div>
+        {/* Auto-playing teaser */}
+        <div className="mt-16 max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: '0.3s', opacity: 0, animationFillMode: 'forwards' }}>
+          <DemoTeaser />
         </div>
       </div>
 
