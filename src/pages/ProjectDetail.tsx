@@ -22,6 +22,9 @@ import ProjectHealthScore from "@/components/ProjectHealthScore";
 import VisualRiskRadarChart from "@/components/VisualRiskRadarChart";
 import PredictiveDelayDetection from "@/components/PredictiveDelayDetection";
 import AutomaticRiskRegister from "@/components/AutomaticRiskRegister";
+import GoalDrivenAgent from "@/components/GoalDrivenAgent";
+import SelfHealingSchedule from "@/components/SelfHealingSchedule";
+import AISprintAutoPlanner from "@/components/AISprintAutoPlanner";
 import { useGoals } from "@/hooks/useGoals";
 import { useSprints } from "@/hooks/useSprints";
 import {
@@ -299,6 +302,41 @@ const ProjectDetail = () => {
               <AIPredictiveInsights
                 project={project}
                 tasks={tasks || []}
+              />
+
+              {/* Goal-Driven AI Agent */}
+              <GoalDrivenAgent 
+                projectId={project.id}
+                projectName={project.name}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+
+              {/* Self-Healing Schedule */}
+              <SelfHealingSchedule 
+                projectId={project.id}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+              />
+
+              {/* AI Sprint Auto-Planner */}
+              <AISprintAutoPlanner 
+                projectId={project.id}
+                tasks={tasks || []}
+                teamMembers={project.members?.map(m => ({
+                  user_id: m.user_id,
+                  full_name: m.profiles?.full_name || null,
+                  role: m.role
+                })) || []}
+                currentSprintId={sprints?.find(s => s.status === 'active')?.id}
               />
 
               {/* Smart Scheduling */}
