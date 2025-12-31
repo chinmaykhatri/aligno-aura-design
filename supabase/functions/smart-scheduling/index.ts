@@ -55,7 +55,7 @@ serve(async (req) => {
     }
 
     // Validate type is an allowed scheduling operation
-    const allowedTypes = ['suggestions', 'auto-schedule', 'workload', 'deadline-alerts'];
+    const allowedTypes = ['suggestions', 'auto-schedule', 'workload', 'deadline-alerts', 'agent-plan'];
     if (!allowedTypes.includes(type)) {
       console.error(`Invalid scheduling type: ${type}`);
       return new Response(JSON.stringify({ error: 'Invalid scheduling type' }), {
@@ -63,6 +63,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const { goal, targetDate, constraints } = await req.json().catch(() => ({}));
 
     console.log(`Smart scheduling request: ${type} for project ${projectId}`);
     console.log(`Tasks count: ${tasks?.length || 0}, Team members: ${teamMembers?.length || 0}`);
@@ -122,6 +124,24 @@ Tasks:
 ${tasksContext}
 
 Return JSON: { "alerts": [{ "taskId": "id", "taskTitle": "title", "alertLevel": "critical|warning|info", "dueDate": "date", "daysRemaining": number, "message": "what action needed", "suggestedAction": "specific recommendation" }] }`;
+        break;
+
+      case 'agent-plan':
+        systemPrompt = `You are an AI project planning agent. Given a goal, deadline, and constraints, create a detailed action plan to achieve it. Break down into specific, actionable steps. Return JSON format only.`;
+        userPrompt = `Create a plan to achieve this goal:
+
+GOAL: ${sanitizeForPrompt(goal, 500)}
+TARGET DATE: ${targetDate}
+CONSTRAINTS:
+${(constraints || []).map((c: string) => `- ${sanitizeForPrompt(c, 200)}`).join('\n') || 'None specified'}
+
+Available Tasks:
+${tasksContext}
+
+Team:
+${teamContext}
+
+Return JSON: { "actions": [{ "type": "schedule|assign|reschedule|alert", "description": "what to do", "taskId": "task id if applicable", "details": { "dueDate": "YYYY-MM-DD", "assignTo": "user_id" } }], "timeline": "estimated timeline", "risks": ["potential risks"] }`;
         break;
 
       default:
