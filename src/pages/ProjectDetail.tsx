@@ -390,17 +390,6 @@ const ProjectDetail = () => {
                 })) || []}
               />
 
-              {/* Smart Scheduling */}
-              <SmartScheduling 
-                projectId={project.id}
-                projectName={project.name}
-                tasks={tasks || []}
-                teamMembers={project.members?.map(m => ({
-                  user_id: m.user_id,
-                  full_name: m.profiles?.full_name || null,
-                  role: m.role
-                })) || []}
-              />
 
               {/* Team Mood Scanner */}
               <TeamMoodScanner projectId={project.id} />
