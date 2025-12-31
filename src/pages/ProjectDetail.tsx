@@ -18,7 +18,12 @@ import { IntegrationsManager } from "@/components/IntegrationsManager";
 import RiskRadar from "@/components/RiskRadar";
 import RoadmapView from "@/components/RoadmapView";
 import OKRManager from "@/components/OKRManager";
+import ProjectHealthScore from "@/components/ProjectHealthScore";
+import VisualRiskRadarChart from "@/components/VisualRiskRadarChart";
+import PredictiveDelayDetection from "@/components/PredictiveDelayDetection";
+import AutomaticRiskRegister from "@/components/AutomaticRiskRegister";
 import { useGoals } from "@/hooks/useGoals";
+import { useSprints } from "@/hooks/useSprints";
 import {
   Select,
   SelectContent,
@@ -55,6 +60,7 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(id);
   const { data: tasks } = useTasks(id);
+  const { data: sprints } = useSprints(id);
   const { goals } = useGoals(id || '');
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
@@ -266,6 +272,18 @@ const ProjectDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Project Health Score */}
+              <ProjectHealthScore projectId={project.id} tasks={tasks || []} sprints={sprints || []} />
+
+              {/* Visual Risk Radar Chart */}
+              <VisualRiskRadarChart projectId={project.id} tasks={tasks || []} sprints={sprints || []} />
+
+              {/* Predictive Delay Detection */}
+              <PredictiveDelayDetection projectId={project.id} tasks={tasks || []} />
+
+              {/* Automatic Risk Register */}
+              <AutomaticRiskRegister projectId={project.id} tasks={tasks || []} />
+
               {/* Risk Radar - AI Early Warning */}
               <RiskRadar projectId={project.id} />
 
