@@ -28,6 +28,9 @@ import AISprintAutoPlanner from "@/components/AISprintAutoPlanner";
 import WhatIfSimulator from "@/components/WhatIfSimulator";
 import AICapacityForecaster from "@/components/AICapacityForecaster";
 import SkillAwareAssignment from "@/components/SkillAwareAssignment";
+import TeamMoodScanner from "@/components/TeamMoodScanner";
+import AIProjectHistorian from "@/components/AIProjectHistorian";
+import DocumentIngestion from "@/components/DocumentIngestion";
 import { useGoals } from "@/hooks/useGoals";
 import { useSprints } from "@/hooks/useSprints";
 import {
@@ -398,6 +401,18 @@ const ProjectDetail = () => {
                   role: m.role
                 })) || []}
               />
+
+              {/* Team Mood Scanner */}
+              <TeamMoodScanner projectId={project.id} />
+
+              {/* AI Project Historian */}
+              <AIProjectHistorian 
+                projectId={project.id}
+                projectName={project.name}
+              />
+
+              {/* Document Ingestion */}
+              <DocumentIngestion projectId={project.id} />
               
               {/* Team Collaboration */}
               <TeamCollaboration projectId={project.id} projectName={project.name} />
