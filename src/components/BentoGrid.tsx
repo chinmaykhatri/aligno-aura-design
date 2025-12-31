@@ -1,41 +1,41 @@
-import { Calendar, Clock, MessageSquare, Users, Zap, Target } from "lucide-react";
+import { Eye, AlertTriangle, Lightbulb, GitBranch, BarChart3, Shield } from "lucide-react";
 
 const BentoGrid = () => {
-  const features = [
+  const capabilities = [
     {
-      icon: Zap,
-      title: "Lightning Fast",
-      description: "Optimized performance for seamless workflow",
+      icon: Eye,
+      title: "Predictive Insight",
+      description: "See potential delays and risks before they become problems",
       className: "md:col-span-2"
     },
     {
-      icon: Users,
-      title: "Team Collaboration",
-      description: "Real-time updates across your team",
+      icon: AlertTriangle,
+      title: "Early Warning",
+      description: "Get alerts when signals suggest something may slip",
       className: ""
     },
     {
-      icon: Calendar,
-      title: "Smart Scheduling",
-      description: "AI-powered task prioritization",
+      icon: Lightbulb,
+      title: "Explainable Intelligence",
+      description: "Understand why each insight matters—no black boxes",
       className: ""
     },
     {
-      icon: Target,
-      title: "Goal Tracking",
-      description: "Monitor progress with precision",
+      icon: GitBranch,
+      title: "Scenario Simulation",
+      description: "Explore outcomes before committing to decisions",
       className: "md:col-span-2"
     },
     {
-      icon: MessageSquare,
-      title: "Instant Communication",
-      description: "Built-in chat and notifications",
+      icon: BarChart3,
+      title: "Portfolio Clarity",
+      description: "Unified health view across all your initiatives",
       className: ""
     },
     {
-      icon: Clock,
-      title: "Time Management",
-      description: "Track time and boost productivity",
+      icon: Shield,
+      title: "Human-in-Control",
+      description: "AI recommends, you decide—always reviewable",
       className: ""
     },
   ];
@@ -45,28 +45,28 @@ const BentoGrid = () => {
       <div className="container mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Everything You Need in One Place
+            Intelligence that works with you
           </h2>
           <p className="text-lg text-muted-foreground">
-            Powerful features designed to streamline your workflow
+            Capabilities designed to surface what matters—without overwhelming you
           </p>
         </div>
         
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {features.map((feature, index) => (
+          {capabilities.map((capability, index) => (
             <div
-              key={feature.title}
-              className={`p-8 rounded-2xl bg-card border border-border/40 hover:border-copper/40 transition-smooth group ${feature.className} animate-fade-up`}
+              key={capability.title}
+              className={`p-8 rounded-2xl bg-card border border-border/40 hover:border-copper/40 transition-smooth group ${capability.className} animate-fade-up`}
               style={{ animationDelay: `${0.1 * index}s` }}
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-copper flex items-center justify-center mb-4 group-hover:scale-110 transition-smooth">
-                <feature.icon className="w-6 h-6 text-deep-black" />
+                <capability.icon className="w-6 h-6 text-deep-black" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                {feature.title}
+                {capability.title}
               </h3>
               <p className="text-muted-foreground">
-                {feature.description}
+                {capability.description}
               </p>
             </div>
           ))}
