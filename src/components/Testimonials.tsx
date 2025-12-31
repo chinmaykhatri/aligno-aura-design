@@ -1,50 +1,37 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, MessageCircle } from "lucide-react";
 
 const Testimonials = () => {
   const testimonials = [
     {
-      name: "Sarah Chen",
-      role: "Product Manager at TechFlow",
-      content: "Aligno transformed how our team works. We're 40% more productive and finally have visibility into every project. The AI features are game-changing!",
-      avatar: "SC",
-      engagement: { likes: 234, comments: 45 }
+      name: "Rachel Kim",
+      role: "Engineering Lead, SaaS Team",
+      content: "We stopped discovering problems at the deadline. Aligno helped us see risk early and adjust before it became expensive.",
+      avatar: "RK",
     },
     {
-      name: "Michael Rodriguez",
-      role: "Engineering Lead at DataWave",
-      content: "The best project management tool we've used. Clean interface, powerful features, and the automation saves us hours every week.",
-      avatar: "MR",
-      engagement: { likes: 189, comments: 32 }
+      name: "Marcus Chen",
+      role: "Product Manager",
+      content: "Instead of asking for status updates, I finally had one place that told me what mattered and why.",
+      avatar: "MC",
     },
     {
-      name: "Emily Thompson",
-      role: "Creative Director at InnovateX",
-      content: "Finally, a tool that doesn't get in the way. Aligno's intuitive design means our team actually uses it. Highly recommended!",
-      avatar: "ET",
-      engagement: { likes: 312, comments: 67 }
-    },
-    {
-      name: "David Park",
+      name: "David Okonkwo",
       role: "Startup Founder",
-      content: "As a small team, we needed something powerful but affordable. Aligno delivers enterprise features at a fraction of the cost.",
-      avatar: "DP",
-      engagement: { likes: 156, comments: 28 }
+      content: "The real value wasn't tracking work—it was understanding which decision would change the outcome.",
+      avatar: "DO",
     },
     {
-      name: "Lisa Martinez",
-      role: "Operations Manager at CloudSync",
-      content: "The real-time collaboration features are incredible. We're coordinating across 3 time zones effortlessly now.",
-      avatar: "LM",
-      engagement: { likes: 278, comments: 52 }
+      name: "Sarah Mitchell",
+      role: "Delivery Manager",
+      content: "Aligno didn't overwhelm us with dashboards. It gave us one clear insight and let us explore deeper only when needed.",
+      avatar: "SM",
     },
     {
-      name: "James Wilson",
-      role: "Marketing Director at NexGen",
-      content: "Aligno's analytics gave us insights we never had before. We've optimized our workflows and doubled our output.",
-      avatar: "JW",
-      engagement: { likes: 201, comments: 38 }
-    }
+      name: "James Torres",
+      role: "VP of Engineering",
+      content: "We moved from reactive firefighting to proactive planning. The difference in team confidence alone was worth it.",
+      avatar: "JT",
+    },
   ];
 
   return (
@@ -52,10 +39,10 @@ const Testimonials = () => {
       <div className="container mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            People Can't Stop Talking About Us
+            Teams that understand their work differently
           </h2>
           <p className="text-lg text-muted-foreground">
-            Join thousands of teams transforming their workflow
+            Leaders share how early insight changed their outcomes
           </p>
         </div>
         
@@ -63,33 +50,24 @@ const Testimonials = () => {
           {testimonials.map((testimonial, index) => (
             <div
               key={testimonial.name}
-              className="p-6 rounded-2xl bg-card border border-border/40 hover:border-copper/30 transition-smooth space-y-4 animate-fade-up"
+              className={`p-8 rounded-2xl bg-card border border-border/40 hover:border-copper/30 transition-smooth space-y-6 animate-fade-up ${
+                index === 4 ? "lg:col-span-1 md:col-span-2 lg:col-start-2" : ""
+              }`}
               style={{ animationDelay: `${0.1 * index}s` }}
             >
-              <div className="flex items-center gap-3">
+              <p className="text-foreground leading-relaxed text-lg">
+                "{testimonial.content}"
+              </p>
+              
+              <div className="flex items-center gap-3 pt-2">
                 <Avatar className="w-10 h-10 border border-copper/40">
-                  <AvatarFallback className="bg-gradient-copper text-deep-black font-medium">
+                  <AvatarFallback className="bg-gradient-copper text-deep-black font-medium text-sm">
                     {testimonial.avatar}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h3 className="font-semibold text-foreground text-sm">{testimonial.name}</h3>
                   <p className="text-xs text-muted-foreground">{testimonial.role}</p>
-                </div>
-              </div>
-              
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                "{testimonial.content}"
-              </p>
-              
-              <div className="flex items-center gap-4 pt-2 text-muted-foreground">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Heart className="w-3.5 h-3.5" />
-                  <span>{testimonial.engagement.likes}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>{testimonial.engagement.comments}</span>
                 </div>
               </div>
             </div>

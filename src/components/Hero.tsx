@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Sparkles, Play } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DemoPresentation from "@/components/DemoPresentation";
 import DemoTeaser from "@/components/DemoTeaser";
@@ -14,16 +14,17 @@ const Hero = () => {
       <div className="container mx-auto px-6 pt-24 pb-12 relative z-10">
         <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-copper/20 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4 text-amber-glow" />
-            <span className="text-sm font-medium text-foreground">New AI Features</span>
+            <span className="text-sm font-medium text-foreground">Work Intelligence Platform</span>
           </div>
           
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold leading-tight">
-            <span className="text-gradient-copper">Aligno</span>
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+            <span className="text-gradient-copper">See what's about to go wrong.</span>
+            <br />
+            <span className="text-foreground">Understand why. Act early.</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto font-light">
-            Prioritize What Matters — Streamline Your Workflow and Focus on What Drives Success!
+            Aligno predicts risk, simulates outcomes, and guides execution—so teams make better decisions before deadlines slip.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
@@ -31,7 +32,7 @@ const Hero = () => {
               size="lg" 
               className="bg-gradient-copper hover:opacity-90 transition-smooth text-lg px-8 py-6 glow-copper"
             >
-              Start Free Trial
+              See How Aligno Thinks
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <Button 
@@ -41,7 +42,7 @@ const Hero = () => {
               onClick={() => setIsDemoOpen(true)}
             >
               <Play className="mr-2 w-5 h-5" />
-              Watch Full Demo
+              Watch the Insight-First Demo
             </Button>
           </div>
         </div>

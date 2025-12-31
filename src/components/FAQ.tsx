@@ -8,26 +8,45 @@ import {
 const FAQ = () => {
   const faqs = [
     {
-      question: "How does Aligno's AI-powered task prioritization work?",
-      answer: "Aligno uses advanced machine learning algorithms to analyze your project data, team capacity, deadlines, and task dependencies. It automatically suggests optimal task priorities and can even predict potential bottlenecks before they occur. The AI learns from your team's patterns over time, becoming more accurate with continued use. You maintain full control and can always override AI suggestions.",
-      link: true
+      question: "Is Aligno a project management tool?",
+      answer: "Aligno is broader than project management. While it understands tasks, timelines, and teams, its purpose is to provide intelligence—predicting risk, explaining why something matters, and helping you decide what to do next. It's a work intelligence platform that supports decision-making, not just task tracking.",
     },
     {
-      question: "Can I migrate my existing projects from other tools?",
-      answer: "Yes! Aligno offers seamless migration from popular project management tools including Asana, Trello, Monday.com, and Jira. Our migration wizard preserves your project structure, tasks, comments, and attachments."
+      question: "How is Aligno different from task tracking platforms?",
+      answer: "Task trackers show you what's on your list. Aligno shows you what's likely to go wrong, why, and what you can do about it. It connects capacity, dependencies, sentiment, and execution into a single insight—so you spend less time gathering data and more time making good decisions.",
     },
     {
-      question: "What integrations does Aligno support?",
-      answer: "Aligno integrates with over 50 popular tools including Slack, Microsoft Teams, Google Workspace, GitHub, Figma, and more. We also provide a robust API for custom integrations."
+      question: "Does Aligno replace managers or teams?",
+      answer: "No. Aligno supports human judgment—it doesn't replace it. Every recommendation is reviewable, every action is optional, and every decision stays with your team. Think of it as a calm advisor that surfaces what matters, not an autopilot that takes over.",
     },
     {
-      question: "Is my data secure with Aligno?",
-      answer: "Security is our top priority. We use bank-level 256-bit SSL encryption, comply with SOC 2 Type II standards, and offer enterprise features like SSO and advanced permission controls. Your data is backed up multiple times daily."
+      question: "How does Aligno predict risk and delays?",
+      answer: "Aligno analyzes patterns across your work—task progress, team capacity, historical velocity, dependencies, and more. It identifies early signals that often precede delays and surfaces them before they become problems. The goal is foresight, not hindsight.",
     },
     {
-      question: "Can I cancel my subscription anytime?",
-      answer: "Absolutely. You can cancel your Pro subscription at any time with no penalties or hidden fees. Your data remains accessible, and you can export it at any point."
-    }
+      question: "Can teams still work normally without AI automation?",
+      answer: "Absolutely. AI in Aligno is advisory, never forced. You can ignore suggestions, override recommendations, or simply use Aligno as a visibility layer. The intelligence adapts to how you work—it doesn't demand you change.",
+    },
+    {
+      question: "Who is Aligno best suited for?",
+      answer: "Teams, leads, and executives who care about outcomes—not just outputs. If you've ever wished you could see problems earlier, explain project health clearly, or make decisions with more confidence, Aligno is designed for you.",
+    },
+    {
+      question: "Is Aligno suitable for small teams or individuals?",
+      answer: "Yes. Insight depth scales with usage. A solo founder can use Aligno to stay ahead of their own workload, while enterprise teams can use it across portfolios. The platform adapts to your context.",
+    },
+    {
+      question: "How does Aligno avoid overwhelming users with data?",
+      answer: "Instead of showing everything, Aligno starts with a Single Insight Summary—one clear answer about what matters most right now. You can explore deeper when needed, but the default is clarity, not complexity.",
+    },
+    {
+      question: "Is my data secure and private?",
+      answer: "Yes. Your data is encrypted, access-controlled, and never shared. Aligno is built with enterprise-grade security in mind, so you can trust it with sensitive project information.",
+    },
+    {
+      question: "Can Aligno scale from one project to a portfolio?",
+      answer: "Yes. Aligno provides portfolio-level intelligence—aggregate health scores, cross-project risk visibility, and executive summaries that span multiple initiatives. As your scope grows, so does the insight.",
+    },
   ];
 
   return (
@@ -35,10 +54,10 @@ const FAQ = () => {
       <div className="container mx-auto px-6">
         <div className="max-w-3xl mx-auto text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground">
-            Frequently Asked Questions
+            Questions about Aligno
           </h2>
           <p className="text-lg text-muted-foreground">
-            Everything you need to know about Aligno
+            Understanding how work intelligence is different
           </p>
         </div>
         
@@ -55,11 +74,6 @@ const FAQ = () => {
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed">
                   {faq.answer}
-                  {faq.link && (
-                    <a href="#" className="text-copper hover:text-copper-dark ml-2 text-sm underline">
-                      Read more →
-                    </a>
-                  )}
                 </AccordionContent>
               </AccordionItem>
             ))}
