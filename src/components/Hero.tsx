@@ -1,8 +1,12 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Sparkles, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroDashboard from "@/assets/hero-dashboard.jpg";
+import DemoPresentation from "@/components/DemoPresentation";
 
 const Hero = () => {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero grid-pattern">
       <div className="spotlight-glow absolute inset-0 pointer-events-none" />
@@ -34,7 +38,9 @@ const Hero = () => {
               size="lg" 
               variant="outline" 
               className="border-copper/40 hover:bg-copper/10 text-lg px-8 py-6"
+              onClick={() => setIsDemoOpen(true)}
             >
+              <Play className="mr-2 w-5 h-5" />
               Watch Demo
             </Button>
           </div>
@@ -71,6 +77,9 @@ const Hero = () => {
           </div>
         </div>
       </div>
+
+      {/* Demo Presentation Modal */}
+      <DemoPresentation isOpen={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
     </section>
   );
 };
