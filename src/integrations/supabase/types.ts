@@ -208,6 +208,114 @@ export type Database = {
           },
         ]
       }
+      okr_task_links: {
+        Row: {
+          created_at: string
+          id: string
+          okr_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          okr_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          okr_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_task_links_okr_id_fkey"
+            columns: ["okr_id"]
+            isOneToOne: false
+            referencedRelation: "okrs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_task_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okrs: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          end_date: string | null
+          id: string
+          parent_id: string | null
+          progress: number | null
+          project_id: string | null
+          start_date: string | null
+          status: string | null
+          target_value: number | null
+          title: string
+          type: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          parent_id?: string | null
+          progress?: number | null
+          project_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_value?: number | null
+          title: string
+          type?: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          parent_id?: string | null
+          progress?: number | null
+          project_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_value?: number | null
+          title?: string
+          type?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okrs_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "okrs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okrs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
