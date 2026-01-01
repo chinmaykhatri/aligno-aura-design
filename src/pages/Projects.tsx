@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectDialog } from "@/components/ProjectDialog";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectsGridSkeleton } from "@/components/ProjectCardSkeleton";
 import Navigation from "@/components/Navigation";
 import { PageTransition } from "@/components/PageTransition";
 
@@ -58,11 +58,7 @@ const Projects = () => {
 
             {/* Projects Grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-64 rounded-2xl" />
-                ))}
-              </div>
+              <ProjectsGridSkeleton count={6} />
             ) : filteredProjects && filteredProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProjects.map((project) => (
