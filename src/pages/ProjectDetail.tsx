@@ -36,6 +36,7 @@ import {
   KeyboardShortcuts,
 } from "@/components/project-detail";
 import { AnimatedSection } from "@/components/AnimatedSection";
+import { PageTransition } from "@/components/PageTransition";
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -136,8 +137,9 @@ const ProjectDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <PageTransition>
+      <div className="min-h-screen bg-background">
+        <Navigation />
       
       {/* Sticky Mini Header */}
       <StickyMiniHeader
@@ -303,7 +305,8 @@ const ProjectDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 
