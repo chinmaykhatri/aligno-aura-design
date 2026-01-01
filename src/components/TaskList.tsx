@@ -11,6 +11,8 @@ import { KanbanBoard } from '@/components/KanbanBoard';
 import { TaskNavigation } from '@/components/TaskNavigation';
 import { QuickStatusChange } from '@/components/QuickStatusChange';
 import { TaskCompletionCelebration } from '@/components/TaskCompletionCelebration';
+import { TaskStreak } from '@/components/TaskStreak';
+import { useTaskStreak } from '@/hooks/useTaskStreak';
 import { Plus, Clock, Calendar, Trash2, Edit2, LayoutList, Kanban, Search } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -38,6 +40,7 @@ type ViewMode = 'list' | 'kanban';
 
 export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
   const { data: tasks, isLoading } = useTasks(projectId);
+  const streakData = useTaskStreak(tasks);
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -126,9 +129,10 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-copper" />
             Tasks
+            <TaskStreak {...streakData} />
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button
