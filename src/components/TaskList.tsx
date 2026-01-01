@@ -12,7 +12,10 @@ import { TaskNavigation } from '@/components/TaskNavigation';
 import { QuickStatusChange } from '@/components/QuickStatusChange';
 import { TaskCompletionCelebration } from '@/components/TaskCompletionCelebration';
 import { TaskStreak } from '@/components/TaskStreak';
+import { XPDisplay } from '@/components/XPDisplay';
+import { XPGainAnimation } from '@/components/XPGainAnimation';
 import { useTaskStreak } from '@/hooks/useTaskStreak';
+import { useGamification, XP_REWARDS } from '@/hooks/useGamification';
 import { Plus, Clock, Calendar, Trash2, Edit2, LayoutList, Kanban, Search } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -41,6 +44,7 @@ type ViewMode = 'list' | 'kanban';
 export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
   const { data: tasks, isLoading } = useTasks(projectId);
   const streakData = useTaskStreak(tasks);
+  const { awardXP } = useGamification();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -52,19 +56,41 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebratingTask, setCelebratingTask] = useState<Task | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
+  const [showXPAnimation, setShowXPAnimation] = useState(false);
+  const [xpGainData, setXPGainData] = useState({ xpAmount: 0, leveledUp: false, newLevel: 0, streakBonus: 0 });
 
   const handleSelectTask = (task: Task) => {
     setEditingTask(task);
   };
 
-  const handleStatusToggle = useCallback((task: Task) => {
+  const handleStatusToggle = useCallback(async (task: Task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
     
-    // Trigger celebration when completing a task
+    // Trigger celebration and XP when completing a task
     if (newStatus === 'completed') {
       setCelebratingTask(task);
       setCompletedCount(prev => prev + 1);
       setShowCelebration(true);
+      
+      // Award XP based on priority
+      const xpAmount = task.priority === 'high' 
+        ? XP_REWARDS.TASK_COMPLETE_HIGH 
+        : task.priority === 'medium' 
+          ? XP_REWARDS.TASK_COMPLETE_MEDIUM 
+          : XP_REWARDS.TASK_COMPLETE_LOW;
+      
+      try {
+        const result = await awardXP.mutateAsync({ xpAmount, reason: 'task_complete' });
+        setXPGainData({
+          xpAmount: result.xpEarned,
+          leveledUp: result.leveledUp,
+          newLevel: result.newLevel,
+          streakBonus: result.streakBonus,
+        });
+        setShowXPAnimation(true);
+      } catch (error) {
+        console.error('Failed to award XP:', error);
+      }
     }
     
     updateTask.mutate({
@@ -72,7 +98,7 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
       projectId: task.project_id,
       status: newStatus,
     });
-  }, [updateTask]);
+  }, [updateTask, awardXP]);
 
   const handleCelebrationComplete = useCallback(() => {
     setShowCelebration(false);
@@ -133,6 +159,7 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
             <Clock className="w-5 h-5 text-copper" />
             Tasks
             <TaskStreak {...streakData} />
+            <XPDisplay variant="compact" />
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button
@@ -341,6 +368,15 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
         taskTitle={celebratingTask?.title}
         onComplete={handleCelebrationComplete}
         variant={completedCount % 5 === 0 && completedCount > 0 ? 'milestone' : completedCount % 3 === 0 ? 'streak' : 'confetti'}
+      />
+
+      <XPGainAnimation
+        show={showXPAnimation}
+        xpAmount={xpGainData.xpAmount}
+        leveledUp={xpGainData.leveledUp}
+        newLevel={xpGainData.newLevel}
+        streakBonus={xpGainData.streakBonus}
+        onComplete={() => setShowXPAnimation(false)}
       />
     </>
   );
