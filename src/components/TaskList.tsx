@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Task, useTasks, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { TimeTracker } from '@/components/TimeTracker';
 import { KanbanBoard } from '@/components/KanbanBoard';
 import { TaskNavigation } from '@/components/TaskNavigation';
 import { QuickStatusChange } from '@/components/QuickStatusChange';
+import { TaskCompletionCelebration } from '@/components/TaskCompletionCelebration';
 import { Plus, Clock, Calendar, Trash2, Edit2, LayoutList, Kanban, Search } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -45,19 +46,35 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null);
   const [trackingTask, setTrackingTask] = useState<Task | null>(null);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebratingTask, setCelebratingTask] = useState<Task | null>(null);
+  const [completedCount, setCompletedCount] = useState(0);
 
   const handleSelectTask = (task: Task) => {
     setEditingTask(task);
   };
 
-  const handleStatusToggle = (task: Task) => {
+  const handleStatusToggle = useCallback((task: Task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    
+    // Trigger celebration when completing a task
+    if (newStatus === 'completed') {
+      setCelebratingTask(task);
+      setCompletedCount(prev => prev + 1);
+      setShowCelebration(true);
+    }
+    
     updateTask.mutate({
       id: task.id,
       projectId: task.project_id,
       status: newStatus,
     });
-  };
+  }, [updateTask]);
+
+  const handleCelebrationComplete = useCallback(() => {
+    setShowCelebration(false);
+    setCelebratingTask(null);
+  }, []);
 
   const handleDelete = () => {
     if (deletingTask) {
@@ -313,6 +330,13 @@ export const TaskList = ({ projectId, isOwner }: TaskListProps) => {
         open={isNavigationOpen}
         onOpenChange={setIsNavigationOpen}
         onSelectTask={handleSelectTask}
+      />
+
+      <TaskCompletionCelebration
+        show={showCelebration}
+        taskTitle={celebratingTask?.title}
+        onComplete={handleCelebrationComplete}
+        variant={completedCount % 5 === 0 && completedCount > 0 ? 'milestone' : completedCount % 3 === 0 ? 'streak' : 'confetti'}
       />
     </>
   );
