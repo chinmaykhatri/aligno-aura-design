@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 export type ZoomLevel = 'day' | 'week' | 'month';
+export type SwimlaneMode = 'project' | 'assignee' | 'priority' | 'sprint';
 
 interface GanttChartProps {
   projectId?: string;
@@ -21,10 +22,13 @@ interface GanttChartProps {
   daysToShow: number;
   zoomLevel?: ZoomLevel;
   showBaseline?: boolean;
+  swimlaneMode?: SwimlaneMode;
 }
 
 interface TaskWithProject extends Task {
   project_name?: string;
+  assignee_name?: string;
+  sprint_name?: string;
 }
 
 interface TaskDependency {
@@ -34,7 +38,7 @@ interface TaskDependency {
   created_at: string;
 }
 
-const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day', showBaseline = false }: GanttChartProps) => {
+const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day', showBaseline = false, swimlaneMode = 'project' }: GanttChartProps) => {
   const queryClient = useQueryClient();
   const updateTask = useUpdateTask();
   const { data: dependencies } = useTaskDependencies(projectId);
@@ -352,16 +356,36 @@ const GanttChart = ({ projectId, startDate, daysToShow, zoomLevel = 'day', showB
     }
   };
 
-  // Group tasks by project
-  const tasksByProject = useMemo(() => {
+  // Group tasks by swimlane mode
+  const groupedTasks = useMemo(() => {
     if (!tasks) return {};
+    
     return tasks.reduce((acc, task) => {
-      const key = task.project_name || 'Unknown';
+      let key: string;
+      
+      switch (swimlaneMode) {
+        case 'assignee':
+          key = task.assigned_to || 'Unassigned';
+          break;
+        case 'priority':
+          key = task.priority?.charAt(0).toUpperCase() + task.priority?.slice(1) || 'Normal';
+          break;
+        case 'sprint':
+          key = task.sprint_id || 'No Sprint';
+          break;
+        case 'project':
+        default:
+          key = task.project_name || 'Unknown';
+      }
+      
       if (!acc[key]) acc[key] = [];
       acc[key].push(task);
       return acc;
     }, {} as Record<string, TaskWithProject[]>);
-  }, [tasks]);
+  }, [tasks, swimlaneMode]);
+
+  // Keep tasksByProject for backward compatibility
+  const tasksByProject = groupedTasks;
 
   // Calculate critical path - longest dependency chain affecting project completion
   const criticalPathTaskIds = useMemo(() => {

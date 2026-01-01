@@ -2,14 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
-import GanttChart, { ZoomLevel } from '@/components/GanttChart';
+import GanttChart, { ZoomLevel, SwimlaneMode } from '@/components/GanttChart';
 import WorkloadView from '@/components/WorkloadView';
 import SprintPlanning from '@/components/SprintPlanning';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download, Save, Eye, EyeOff, Layers } from 'lucide-react';
+import { GanttChart as GanttIcon, ChevronLeft, ChevronRight, Loader2, Users, Download, Save, Eye, EyeOff, Layers, User, Flag, Calendar } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { addDays, addWeeks, addMonths, startOfWeek, startOfMonth, format } from 'date-fns';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -25,6 +25,7 @@ const Gantt = () => {
   const [showBaseline, setShowBaseline] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('day');
+  const [swimlaneMode, setSwimlaneMode] = useState<SwimlaneMode>('project');
   const [startDate, setStartDate] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [activeView, setActiveView] = useState<'gantt' | 'workload' | 'sprints'>('gantt');
   const { data: projects } = useProjects();
@@ -297,6 +298,39 @@ const Gantt = () => {
                       {format(startDate, zoomLevel === 'month' ? 'yyyy' : 'MMMM yyyy')}
                     </CardTitle>
                     <div className="flex flex-wrap items-center gap-3">
+                      {/* Swimlane Mode */}
+                      <Select value={swimlaneMode} onValueChange={(value) => setSwimlaneMode(value as SwimlaneMode)}>
+                        <SelectTrigger className="w-[140px] h-8 text-xs bg-muted/30">
+                          <SelectValue placeholder="Group by" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="project">
+                            <span className="flex items-center gap-2">
+                              <Layers className="h-3 w-3" />
+                              By Project
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="assignee">
+                            <span className="flex items-center gap-2">
+                              <User className="h-3 w-3" />
+                              By Assignee
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="priority">
+                            <span className="flex items-center gap-2">
+                              <Flag className="h-3 w-3" />
+                              By Priority
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="sprint">
+                            <span className="flex items-center gap-2">
+                              <Calendar className="h-3 w-3" />
+                              By Sprint
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
                       {/* Zoom Level Toggle */}
                       <ToggleGroup 
                         type="single" 
@@ -410,6 +444,7 @@ const Gantt = () => {
                       daysToShow={getDaysToShow()}
                       zoomLevel={zoomLevel}
                       showBaseline={showBaseline}
+                      swimlaneMode={swimlaneMode}
                     />
                   </div>
                 </CardContent>

@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { Edit, Trash2, Calendar, Users, Zap } from "lucide-react";
+import { Edit, Trash2, Calendar, Users, Zap, CheckCircle2 } from "lucide-react";
+import { CircularProgress, AnimatedCounter } from "@/components/AnimatedMetrics";
 import {
   Select,
   SelectContent,
@@ -136,39 +137,57 @@ export const ProjectSnapshot = ({
           )}
         </div>
 
-        {/* Quick Stats Row */}
+        {/* Quick Stats Row - Animated Metrics */}
         <div 
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           style={{ transform: `translateY(${statsY}px)` }}
         >
-          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <Zap className="w-4 h-4 text-copper" />
-              Progress
-            </div>
-            <p className="text-2xl font-bold text-foreground">{project.progress}%</p>
+          {/* Progress Circular */}
+          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30 flex flex-col items-center justify-center">
+            <CircularProgress 
+              value={project.progress} 
+              size={80} 
+              strokeWidth={6}
+              label="Progress"
+            />
           </div>
-          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+          
+          {/* Active Sprint */}
+          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30 group hover:bg-secondary/50 transition-colors">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
               <Calendar className="w-4 h-4 text-copper" />
               Active Sprint
             </div>
-            <p className="text-lg font-semibold text-foreground truncate">
+            <p className="text-lg font-semibold text-foreground truncate group-hover:text-copper transition-colors">
               {activeSprint?.name || "None"}
             </p>
           </div>
-          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+          
+          {/* Team Size */}
+          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30 group hover:bg-secondary/50 transition-colors">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
               <Users className="w-4 h-4 text-copper" />
               Team
             </div>
-            <p className="text-2xl font-bold text-foreground">{teamSize}</p>
+            <AnimatedCounter 
+              value={teamSize} 
+              className="text-3xl font-bold text-foreground group-hover:text-copper transition-colors"
+            />
           </div>
-          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30">
-            <div className="text-muted-foreground text-sm mb-1">Tasks Done</div>
-            <p className="text-2xl font-bold text-foreground">
-              {completedTasks}<span className="text-muted-foreground text-lg font-normal">/{totalTasks}</span>
-            </p>
+          
+          {/* Tasks Done */}
+          <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30 group hover:bg-secondary/50 transition-colors">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+              <CheckCircle2 className="w-4 h-4 text-copper" />
+              Tasks Done
+            </div>
+            <div className="flex items-baseline gap-1">
+              <AnimatedCounter 
+                value={completedTasks} 
+                className="text-3xl font-bold text-foreground group-hover:text-copper transition-colors"
+              />
+              <span className="text-muted-foreground text-lg font-normal">/{totalTasks}</span>
+            </div>
           </div>
         </div>
 
