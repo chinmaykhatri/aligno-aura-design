@@ -7,3 +7,5 @@ export { HistoryKnowledgeSection } from './HistoryKnowledgeSection';
 export { TeamSettingsSection } from './TeamSettingsSection';
 export { StickyMiniHeader } from './StickyMiniHeader';
 export { SectionNavigation } from './SectionNavigation';
+export { ScrollToTop } from './ScrollToTop';
+export { KeyboardShortcuts } from './KeyboardShortcuts';
