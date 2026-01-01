@@ -32,6 +32,8 @@ import {
   TeamSettingsSection,
   StickyMiniHeader,
   SectionNavigation,
+  ScrollToTop,
+  KeyboardShortcuts,
 } from "@/components/project-detail";
 import { AnimatedSection } from "@/components/AnimatedSection";
 
@@ -146,6 +148,12 @@ const ProjectDetail = () => {
       
       {/* Section Navigation */}
       <SectionNavigation />
+      
+      {/* Scroll to Top */}
+      <ScrollToTop />
+      
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts onNavigateBack={() => navigate("/projects")} />
       
       <main className="container mx-auto px-4 sm:px-6 py-24">
         {/* Back Button */}
