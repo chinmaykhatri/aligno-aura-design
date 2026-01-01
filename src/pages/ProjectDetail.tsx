@@ -30,6 +30,8 @@ import {
   AIActionsSection,
   HistoryKnowledgeSection,
   TeamSettingsSection,
+  StickyMiniHeader,
+  SectionNavigation,
 } from "@/components/project-detail";
 import { AnimatedSection } from "@/components/AnimatedSection";
 
@@ -135,6 +137,16 @@ const ProjectDetail = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
+      {/* Sticky Mini Header */}
+      <StickyMiniHeader
+        projectName={project.name}
+        projectStatus={project.status}
+        progress={project.progress}
+      />
+      
+      {/* Section Navigation */}
+      <SectionNavigation />
+      
       <main className="container mx-auto px-4 sm:px-6 py-24">
         {/* Back Button */}
         <Button
@@ -149,90 +161,104 @@ const ProjectDetail = () => {
         {/* Page Layout - Layered Sections */}
         <div className="space-y-12">
           {/* SECTION 1: Project Snapshot - Above the fold */}
-          <AnimatedSection delay={0}>
-            <ProjectSnapshot
-              project={project}
-              sprints={sprints}
-              tasks={tasks}
-              isOwner={isOwner}
-              onEditClick={() => setIsEditDialogOpen(true)}
-              onDeleteClick={() => setIsDeleteDialogOpen(true)}
-              onProgressChange={handleProgressChange}
-              onStatusChange={handleStatusChange}
-            />
-          </AnimatedSection>
+          <div id="section-snapshot">
+            <AnimatedSection delay={0}>
+              <ProjectSnapshot
+                project={project}
+                sprints={sprints}
+                tasks={tasks}
+                isOwner={isOwner}
+                onEditClick={() => setIsEditDialogOpen(true)}
+                onDeleteClick={() => setIsDeleteDialogOpen(true)}
+                onProgressChange={handleProgressChange}
+                onStatusChange={handleStatusChange}
+              />
+            </AnimatedSection>
+          </div>
 
           {/* SECTION 2: Execution Zone - Primary Working Area */}
-          <AnimatedSection delay={100}>
-            <ExecutionZone
-              projectId={project.id}
-              projectName={project.name}
-              isOwner={isOwner}
-            />
-          </AnimatedSection>
+          <div id="section-execution">
+            <AnimatedSection delay={100}>
+              <ExecutionZone
+                projectId={project.id}
+                projectName={project.name}
+                isOwner={isOwner}
+              />
+            </AnimatedSection>
+          </div>
 
           {/* Two-column layout for secondary content */}
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left Column */}
             <div className="space-y-12">
               {/* SECTION 3: Insights & Health */}
-              <AnimatedSection delay={150} direction="left">
-                <InsightsHealthSection
-                  projectId={project.id}
-                  tasks={tasks || []}
-                  sprints={sprints || []}
-                />
-              </AnimatedSection>
+              <div id="section-insights">
+                <AnimatedSection delay={150} direction="left">
+                  <InsightsHealthSection
+                    projectId={project.id}
+                    tasks={tasks || []}
+                    sprints={sprints || []}
+                  />
+                </AnimatedSection>
+              </div>
 
               {/* SECTION 5: AI Actions */}
-              <AnimatedSection delay={250} direction="left">
-                <AIActionsSection
-                  projectId={project.id}
-                  projectName={project.name}
-                  project={project}
-                  tasks={tasks || []}
-                  goals={goals}
-                  teamMembers={teamMembers}
-                  currentSprintId={sprints?.find(s => s.status === 'active')?.id}
-                />
-              </AnimatedSection>
+              <div id="section-ai-actions">
+                <AnimatedSection delay={250} direction="left">
+                  <AIActionsSection
+                    projectId={project.id}
+                    projectName={project.name}
+                    project={project}
+                    tasks={tasks || []}
+                    goals={goals}
+                    teamMembers={teamMembers}
+                    currentSprintId={sprints?.find(s => s.status === 'active')?.id}
+                  />
+                </AnimatedSection>
+              </div>
             </div>
 
             {/* Right Column */}
             <div className="space-y-12">
               {/* SECTION 4: Prediction & Simulation */}
-              <AnimatedSection delay={200} direction="right">
-                <PredictionSimulationSection
-                  projectId={project.id}
-                  tasks={tasks || []}
-                  teamMembers={teamMembers}
-                />
-              </AnimatedSection>
+              <div id="section-prediction">
+                <AnimatedSection delay={200} direction="right">
+                  <PredictionSimulationSection
+                    projectId={project.id}
+                    tasks={tasks || []}
+                    teamMembers={teamMembers}
+                  />
+                </AnimatedSection>
+              </div>
 
               {/* SECTION 6: History & Knowledge */}
-              <AnimatedSection delay={300} direction="right">
-                <HistoryKnowledgeSection
-                  projectId={project.id}
-                  projectName={project.name}
-                />
-              </AnimatedSection>
+              <div id="section-history">
+                <AnimatedSection delay={300} direction="right">
+                  <HistoryKnowledgeSection
+                    projectId={project.id}
+                    projectName={project.name}
+                  />
+                </AnimatedSection>
+              </div>
             </div>
           </div>
 
           {/* SECTION 7: Team & Settings - Full width footer */}
-          <AnimatedSection delay={350}>
-            <TeamSettingsSection
-              projectId={project.id}
-              projectName={project.name}
-              members={project.members || []}
-              isOwner={isOwner}
-              currentUserId={currentUserId}
-              createdAt={project.created_at}
-              updatedAt={project.updated_at}
-              onAddMember={() => setIsAddMemberDialogOpen(true)}
-              onRemoveMember={handleRemoveMember}
-            />
-          </AnimatedSection>
+          <div id="section-team">
+            <AnimatedSection delay={350}>
+              <TeamSettingsSection
+                projectId={project.id}
+                projectName={project.name}
+                members={project.members || []}
+                isOwner={isOwner}
+                currentUserId={currentUserId}
+                createdAt={project.created_at}
+                updatedAt={project.updated_at}
+                onAddMember={() => setIsAddMemberDialogOpen(true)}
+                onRemoveMember={handleRemoveMember}
+              />
+            </AnimatedSection>
+          </div>
         </div>
       </main>
 
