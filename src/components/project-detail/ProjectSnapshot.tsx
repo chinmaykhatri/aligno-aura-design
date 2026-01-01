@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -53,17 +54,64 @@ export const ProjectSnapshot = ({
   onProgressChange,
   onStatusChange,
 }: ProjectSnapshotProps) => {
+  const [scrollY, setScrollY] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      if (sectionRef.current) {
+        const rect = sectionRef.current.getBoundingClientRect();
+        const scrollProgress = Math.max(0, -rect.top);
+        setScrollY(scrollProgress);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const activeSprint = sprints?.find(s => s.status === 'active');
   const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
   const totalTasks = tasks?.length || 0;
   const teamSize = project.members?.length || 0;
 
+  // Parallax values
+  const backgroundY = scrollY * 0.3;
+  const contentY = scrollY * 0.1;
+  const statsY = scrollY * 0.15;
+  const opacity = Math.max(0, 1 - scrollY / 400);
+
   return (
-    <section className="relative">
+    <section ref={sectionRef} className="relative overflow-hidden">
+      {/* Parallax Background Layer */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-br from-copper/5 via-transparent to-primary/5 rounded-3xl"
+        style={{ 
+          transform: `translateY(${backgroundY}px) scale(${1 + scrollY * 0.0005})`,
+          opacity: Math.max(0.3, opacity)
+        }}
+      />
+      
+      {/* Floating Orbs for Depth */}
+      <div 
+        className="absolute -top-20 -right-20 w-64 h-64 bg-copper/10 rounded-full blur-3xl"
+        style={{ transform: `translateY(${scrollY * 0.4}px) translateX(${-scrollY * 0.1}px)` }}
+      />
+      <div 
+        className="absolute -bottom-20 -left-20 w-48 h-48 bg-primary/10 rounded-full blur-3xl"
+        style={{ transform: `translateY(${-scrollY * 0.2}px) translateX(${scrollY * 0.1}px)` }}
+      />
+      
       {/* Main Snapshot Card */}
-      <div className="p-8 rounded-3xl bg-gradient-to-br from-card via-card to-copper/5 border border-border/40 shadow-elevated">
+      <div 
+        className="p-8 rounded-3xl bg-gradient-to-br from-card via-card to-copper/5 border border-border/40 shadow-elevated relative z-10"
+        style={{ transform: `translateY(${contentY}px)` }}
+      >
         {/* Header Row */}
-        <div className="flex items-start justify-between gap-6 mb-8">
+        <div 
+          className="flex items-start justify-between gap-6 mb-8"
+          style={{ opacity }}
+        >
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-4 flex-wrap">
               <h1 className="text-4xl font-bold text-foreground tracking-tight">{project.name}</h1>
@@ -89,7 +137,10 @@ export const ProjectSnapshot = ({
         </div>
 
         {/* Quick Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div 
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          style={{ transform: `translateY(${statsY}px)` }}
+        >
           <div className="p-4 rounded-2xl bg-secondary/30 border border-border/30">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <Zap className="w-4 h-4 text-copper" />
