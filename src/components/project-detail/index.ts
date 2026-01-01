@@ -5,3 +5,5 @@ export { PredictionSimulationSection } from './PredictionSimulationSection';
 export { AIActionsSection } from './AIActionsSection';
 export { HistoryKnowledgeSection } from './HistoryKnowledgeSection';
 export { TeamSettingsSection } from './TeamSettingsSection';
+export { StickyMiniHeader } from './StickyMiniHeader';
+export { SectionNavigation } from './SectionNavigation';
