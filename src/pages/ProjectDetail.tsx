@@ -31,6 +31,7 @@ import {
   HistoryKnowledgeSection,
   TeamSettingsSection,
 } from "@/components/project-detail";
+import { AnimatedSection } from "@/components/AnimatedSection";
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -148,76 +149,90 @@ const ProjectDetail = () => {
         {/* Page Layout - Layered Sections */}
         <div className="space-y-12">
           {/* SECTION 1: Project Snapshot - Above the fold */}
-          <ProjectSnapshot
-            project={project}
-            sprints={sprints}
-            tasks={tasks}
-            isOwner={isOwner}
-            onEditClick={() => setIsEditDialogOpen(true)}
-            onDeleteClick={() => setIsDeleteDialogOpen(true)}
-            onProgressChange={handleProgressChange}
-            onStatusChange={handleStatusChange}
-          />
+          <AnimatedSection delay={0}>
+            <ProjectSnapshot
+              project={project}
+              sprints={sprints}
+              tasks={tasks}
+              isOwner={isOwner}
+              onEditClick={() => setIsEditDialogOpen(true)}
+              onDeleteClick={() => setIsDeleteDialogOpen(true)}
+              onProgressChange={handleProgressChange}
+              onStatusChange={handleStatusChange}
+            />
+          </AnimatedSection>
 
           {/* SECTION 2: Execution Zone - Primary Working Area */}
-          <ExecutionZone
-            projectId={project.id}
-            projectName={project.name}
-            isOwner={isOwner}
-          />
+          <AnimatedSection delay={100}>
+            <ExecutionZone
+              projectId={project.id}
+              projectName={project.name}
+              isOwner={isOwner}
+            />
+          </AnimatedSection>
 
           {/* Two-column layout for secondary content */}
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left Column */}
             <div className="space-y-12">
               {/* SECTION 3: Insights & Health */}
-              <InsightsHealthSection
-                projectId={project.id}
-                tasks={tasks || []}
-                sprints={sprints || []}
-              />
+              <AnimatedSection delay={150} direction="left">
+                <InsightsHealthSection
+                  projectId={project.id}
+                  tasks={tasks || []}
+                  sprints={sprints || []}
+                />
+              </AnimatedSection>
 
               {/* SECTION 5: AI Actions */}
-              <AIActionsSection
-                projectId={project.id}
-                projectName={project.name}
-                project={project}
-                tasks={tasks || []}
-                goals={goals}
-                teamMembers={teamMembers}
-                currentSprintId={sprints?.find(s => s.status === 'active')?.id}
-              />
+              <AnimatedSection delay={250} direction="left">
+                <AIActionsSection
+                  projectId={project.id}
+                  projectName={project.name}
+                  project={project}
+                  tasks={tasks || []}
+                  goals={goals}
+                  teamMembers={teamMembers}
+                  currentSprintId={sprints?.find(s => s.status === 'active')?.id}
+                />
+              </AnimatedSection>
             </div>
 
             {/* Right Column */}
             <div className="space-y-12">
               {/* SECTION 4: Prediction & Simulation */}
-              <PredictionSimulationSection
-                projectId={project.id}
-                tasks={tasks || []}
-                teamMembers={teamMembers}
-              />
+              <AnimatedSection delay={200} direction="right">
+                <PredictionSimulationSection
+                  projectId={project.id}
+                  tasks={tasks || []}
+                  teamMembers={teamMembers}
+                />
+              </AnimatedSection>
 
               {/* SECTION 6: History & Knowledge */}
-              <HistoryKnowledgeSection
-                projectId={project.id}
-                projectName={project.name}
-              />
+              <AnimatedSection delay={300} direction="right">
+                <HistoryKnowledgeSection
+                  projectId={project.id}
+                  projectName={project.name}
+                />
+              </AnimatedSection>
             </div>
           </div>
 
           {/* SECTION 7: Team & Settings - Full width footer */}
-          <TeamSettingsSection
-            projectId={project.id}
-            projectName={project.name}
-            members={project.members || []}
-            isOwner={isOwner}
-            currentUserId={currentUserId}
-            createdAt={project.created_at}
-            updatedAt={project.updated_at}
-            onAddMember={() => setIsAddMemberDialogOpen(true)}
-            onRemoveMember={handleRemoveMember}
-          />
+          <AnimatedSection delay={350}>
+            <TeamSettingsSection
+              projectId={project.id}
+              projectName={project.name}
+              members={project.members || []}
+              isOwner={isOwner}
+              currentUserId={currentUserId}
+              createdAt={project.created_at}
+              updatedAt={project.updated_at}
+              onAddMember={() => setIsAddMemberDialogOpen(true)}
+              onRemoveMember={handleRemoveMember}
+            />
+          </AnimatedSection>
         </div>
       </main>
 
