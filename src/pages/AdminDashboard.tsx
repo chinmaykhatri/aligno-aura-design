@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Users, Settings, Crown, UserCog, AlertTriangle, FolderKanban, Mail, ExternalLink } from "lucide-react";
+import { Shield, Users, Settings, Crown, UserCog, AlertTriangle, FolderKanban, Mail, ExternalLink, Trash2, Ban, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useUpdateUserRole, AppRole } from "@/hooks/useUserRole";
-import { useAdminUsers, useAdminProjects } from "@/hooks/useAdminData";
+import { useAdminUsers, useAdminProjects, useDeleteUser, useSuspendUser } from "@/hooks/useAdminData";
 import Navigation from "@/components/Navigation";
 import { format } from "date-fns";
 
@@ -21,6 +22,8 @@ const AdminDashboard = () => {
   const { data: users, isLoading: usersLoading } = useAdminUsers();
   const { data: projects, isLoading: projectsLoading } = useAdminProjects();
   const updateRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
+  const suspendUser = useSuspendUser();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -264,10 +267,17 @@ const AdminDashboard = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.role)} className="flex items-center w-fit">
-                            {getRoleIcon(user.role)}
-                            {user.role}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={getRoleBadgeVariant(user.role)} className="flex items-center w-fit">
+                              {getRoleIcon(user.role)}
+                              {user.role}
+                            </Badge>
+                            {user.is_suspended && (
+                              <Badge variant="destructive" className="text-xs">
+                                Suspended
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(user.created_at), 'MMM d, yyyy')}
@@ -278,20 +288,96 @@ const AdminDashboard = () => {
                             : 'Never'}
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => handleRoleChange(user.user_id, value as AppRole)}
-                            disabled={user.user_id === currentUserId}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="moderator">Moderator</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={user.role}
+                              onValueChange={(value) => handleRoleChange(user.user_id, value as AppRole)}
+                              disabled={user.user_id === currentUserId}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="user">User</SelectItem>
+                                <SelectItem value="moderator">Moderator</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {user.user_id !== currentUserId && (
+                              <>
+                                {user.is_suspended ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => suspendUser.mutate({ userId: user.user_id, action: 'unsuspend' })}
+                                    disabled={suspendUser.isPending}
+                                    className="text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                                  >
+                                    <UserCheck className="w-4 h-4" />
+                                  </Button>
+                                ) : (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                                      >
+                                        <Ban className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Suspend User</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to suspend {user.full_name || user.email}? They will not be able to log in until unsuspended.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => suspendUser.mutate({ userId: user.user_id, action: 'suspend' })}
+                                          className="bg-amber-500 hover:bg-amber-600"
+                                        >
+                                          Suspend
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to permanently delete {user.full_name || user.email}? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteUser.mutate(user.user_id)}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

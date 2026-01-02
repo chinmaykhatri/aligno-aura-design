@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsAdmin } from './useUserRole';
+import { toast } from 'sonner';
 
 export interface AdminUser {
   id: string;
@@ -12,6 +13,8 @@ export interface AdminUser {
   role_id: string | null;
   created_at: string;
   last_sign_in_at: string | null;
+  is_suspended: boolean;
+  banned_until: string | null;
 }
 
 export interface AdminProject {
@@ -50,6 +53,68 @@ export const useAdminUsers = () => {
       return data.users as AdminUser[];
     },
     enabled: isAdmin,
+  });
+};
+
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: { userId },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('User deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete user');
+    },
+  });
+};
+
+export const useSuspendUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, action }: { userId: string; action: 'suspend' | 'unsuspend' }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase.functions.invoke('admin-users', {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: { userId, action },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success(variables.action === 'suspend' ? 'User suspended successfully' : 'User unsuspended successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update user status');
+    },
   });
 };
 
