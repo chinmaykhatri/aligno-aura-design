@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied";
+type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied" | "member_joined" | "access_request" | "access_request_approved" | "access_request_denied";
 
 interface NotificationData {
   type: NotificationType;
@@ -103,6 +103,69 @@ export const sendSchedulingAppliedNotification = async (
     recipientEmail,
     recipientName,
     data: { projectName, schedulingType, taskTitle, details, appliedBy },
+  });
+};
+
+export const sendMemberJoinedNotification = async (
+  recipientEmail: string,
+  recipientName: string | undefined,
+  projectName: string,
+  memberName: string,
+  memberEmail: string,
+  role: string,
+  joinMethod: string
+) => {
+  return sendNotificationEmail({
+    type: "member_joined",
+    recipientEmail,
+    recipientName,
+    data: { projectName, memberName, memberEmail, role, joinMethod },
+  });
+};
+
+export const sendAccessRequestNotification = async (
+  recipientEmail: string,
+  recipientName: string | undefined,
+  projectName: string,
+  requesterName: string,
+  requesterEmail: string,
+  message?: string,
+  dashboardLink?: string
+) => {
+  return sendNotificationEmail({
+    type: "access_request",
+    recipientEmail,
+    recipientName,
+    data: { projectName, requesterName, requesterEmail, message, dashboardLink },
+  });
+};
+
+export const sendAccessRequestApprovedNotification = async (
+  recipientEmail: string,
+  recipientName: string | undefined,
+  projectName: string,
+  role: string,
+  approvedBy: string,
+  projectLink?: string
+) => {
+  return sendNotificationEmail({
+    type: "access_request_approved",
+    recipientEmail,
+    recipientName,
+    data: { projectName, role, approvedBy, projectLink },
+  });
+};
+
+export const sendAccessRequestDeniedNotification = async (
+  recipientEmail: string,
+  recipientName: string | undefined,
+  projectName: string
+) => {
+  return sendNotificationEmail({
+    type: "access_request_denied",
+    recipientEmail,
+    recipientName,
+    data: { projectName },
   });
 };
 

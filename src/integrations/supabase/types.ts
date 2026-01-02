@@ -1129,6 +1129,11 @@ export type Database = {
         Args: { p_invite_code?: string; p_invite_token?: string }
         Returns: Json
       }
+      approve_access_request: {
+        Args: { p_invitation_id: string }
+        Returns: Json
+      }
+      deny_access_request: { Args: { p_invitation_id: string }; Returns: Json }
       generate_invite_code: { Args: never; Returns: string }
       has_project_access: {
         Args: { project_id: string; user_id: string }
