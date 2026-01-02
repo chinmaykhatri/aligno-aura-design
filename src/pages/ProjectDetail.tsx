@@ -259,6 +259,7 @@ const ProjectDetail = () => {
               <TeamSettingsSection
                 projectId={project.id}
                 projectName={project.name}
+                projectDescription={project.description || undefined}
                 members={project.members || []}
                 isOwner={isOwner}
                 currentUserId={currentUserId}

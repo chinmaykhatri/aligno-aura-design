@@ -27,6 +27,7 @@ interface TeamMember {
 interface TeamSettingsSectionProps {
   projectId: string;
   projectName: string;
+  projectDescription?: string;
   members: TeamMember[];
   isOwner: boolean;
   currentUserId: string | null;
@@ -39,6 +40,7 @@ interface TeamSettingsSectionProps {
 export const TeamSettingsSection = ({
   projectId,
   projectName,
+  projectDescription,
   members,
   isOwner,
   currentUserId,
@@ -190,6 +192,8 @@ export const TeamSettingsSection = ({
         open={showInviteDialog}
         onOpenChange={setShowInviteDialog}
         projectId={projectId}
+        projectName={projectName}
+        projectDescription={projectDescription}
       />
     </section>
   );

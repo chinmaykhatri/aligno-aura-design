@@ -46,7 +46,7 @@ function checkRateLimit(key: string, maxRequests: number): { allowed: boolean; r
   return { allowed: true, remaining: maxRequests - record.count, resetIn: record.resetTime - now };
 }
 
-type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied" | "executive_report";
+type NotificationType = "status_change" | "member_invitation" | "progress_milestone" | "activity_digest" | "scheduling_applied" | "executive_report" | "member_joined" | "access_request" | "access_request_approved" | "access_request_denied";
 
 interface NotificationRequest {
   type: NotificationType;
@@ -78,7 +78,7 @@ function validateRequest(req: unknown): { valid: true; data: NotificationRequest
 
   const { type, recipientEmail, recipientName, data } = req as Record<string, unknown>;
 
-  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest', 'scheduling_applied', 'executive_report'];
+  const validTypes: NotificationType[] = ['status_change', 'member_invitation', 'progress_milestone', 'activity_digest', 'scheduling_applied', 'executive_report', 'member_joined', 'access_request', 'access_request_approved', 'access_request_denied'];
   if (!type || !validTypes.includes(type as NotificationType)) {
     return { valid: false, error: 'Invalid notification type' };
   }
@@ -130,17 +130,217 @@ const getEmailContent = (type: NotificationType, data: Record<string, unknown>, 
       };
 
     case "member_invitation":
+      const inviteLink = data.inviteLink ? String(data.inviteLink) : '';
       return {
-        subject: `You've been invited to join ${escapeHtml(String(data.projectName || ''))}`,
+        subject: `🎉 You're invited to join ${escapeHtml(String(data.projectName || ''))} on Aligno`,
         html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #1a1a2e; margin-bottom: 20px;">Project Invitation</h1>
-            <p style="color: #4a4a4a; font-size: 16px;">Hi ${name},</p>
-            <p style="color: #4a4a4a; font-size: 16px;">You've been invited to join <strong>${escapeHtml(String(data.projectName || ''))}</strong> as a <strong>${escapeHtml(String(data.role || ''))}</strong>.</p>
-            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea;">
-              <p style="color: #4a4a4a; margin: 0; font-size: 14px;">${escapeHtml(String(data.projectDescription || "Join the team and start collaborating!"))}</p>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header with logo -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Aligno</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">Work Intelligence Platform</p>
             </div>
-            <p style="color: #888; font-size: 14px;">Invited by: ${escapeHtml(String(data.invitedBy || "Project owner"))}</p>
+            
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1a1a2e; margin: 0 0 20px; font-size: 24px;">You're Invited! 🎉</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hi ${name},</p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                <strong>${escapeHtml(String(data.invitedBy || "A team member"))}</strong> has invited you to join 
+                <strong>${escapeHtml(String(data.projectName || 'a project'))}</strong> as a <strong>${escapeHtml(String(data.role || 'member'))}</strong>.
+              </p>
+              
+              ${data.projectDescription ? `
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea;">
+                <p style="color: #4a4a4a; margin: 0; font-size: 14px; line-height: 1.6;">${escapeHtml(String(data.projectDescription))}</p>
+              </div>
+              ` : ''}
+              
+              <!-- CTA Button -->
+              ${inviteLink ? `
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${escapeHtml(inviteLink)}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                  Accept Invitation
+                </a>
+              </div>
+              <p style="color: #888; font-size: 12px; text-align: center; margin: 20px 0 0;">
+                Or copy this link: <a href="${escapeHtml(inviteLink)}" style="color: #667eea;">${escapeHtml(inviteLink)}</a>
+              </p>
+              ` : `
+              <div style="background: #f0f0f0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                <p style="color: #4a4a4a; margin: 0; font-size: 14px;">Log in to Aligno to accept this invitation.</p>
+              </div>
+              `}
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
+                This invitation was sent by Aligno. If you didn't expect this email, you can safely ignore it.
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "member_joined":
+      return {
+        subject: `👋 ${escapeHtml(String(data.memberName || 'Someone'))} joined ${escapeHtml(String(data.projectName || 'your project'))}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Aligno</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">New Team Member</p>
+            </div>
+            
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1a1a2e; margin: 0 0 20px; font-size: 24px;">New Member Alert! 👋</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hi ${name},</p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                Great news! <strong>${escapeHtml(String(data.memberName || 'A new member'))}</strong> 
+                ${data.memberEmail ? `(${escapeHtml(String(data.memberEmail))})` : ''} 
+                has joined <strong>${escapeHtml(String(data.projectName || 'your project'))}</strong> as a <strong>${escapeHtml(String(data.role || 'member'))}</strong>.
+              </p>
+              
+              <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; padding: 25px; margin: 25px 0; text-align: center;">
+                <p style="color: white; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Joined via</p>
+                <p style="color: white; margin: 10px 0 0; font-size: 18px; font-weight: bold;">${escapeHtml(String(data.joinMethod || 'Invitation'))}</p>
+              </div>
+              
+              <p style="color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+                Your team is growing! You can now assign tasks and collaborate with ${escapeHtml(String(data.memberName || 'your new team member'))}.
+              </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
+                Sent from Aligno • <a href="#" style="color: #667eea;">Manage notification settings</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "access_request":
+      return {
+        subject: `🔔 ${escapeHtml(String(data.requesterName || 'Someone'))} wants to join ${escapeHtml(String(data.projectName || 'your project'))}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Aligno</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">Access Request</p>
+            </div>
+            
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1a1a2e; margin: 0 0 20px; font-size: 24px;">New Access Request 🔔</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hi ${name},</p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                <strong>${escapeHtml(String(data.requesterName || 'A user'))}</strong> 
+                ${data.requesterEmail ? `(${escapeHtml(String(data.requesterEmail))})` : ''} 
+                is requesting access to join <strong>${escapeHtml(String(data.projectName || 'your project'))}</strong>.
+              </p>
+              
+              ${data.message ? `
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #f5576c;">
+                <p style="color: #888; margin: 0 0 8px; font-size: 12px; text-transform: uppercase;">Message from requester:</p>
+                <p style="color: #4a4a4a; margin: 0; font-size: 14px; font-style: italic;">"${escapeHtml(String(data.message))}"</p>
+              </div>
+              ` : ''}
+              
+              <!-- Action Buttons -->
+              <div style="text-align: center; margin: 30px 0;">
+                <p style="color: #4a4a4a; font-size: 14px; margin-bottom: 20px;">Log in to Aligno to approve or deny this request.</p>
+                <a href="${escapeHtml(String(data.dashboardLink || '#'))}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 35px; border-radius: 8px; font-size: 14px; font-weight: 600;">
+                  Review Request
+                </a>
+              </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
+                Sent from Aligno • Review access requests in your project settings
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "access_request_approved":
+      return {
+        subject: `✅ Your request to join ${escapeHtml(String(data.projectName || 'the project'))} was approved!`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Aligno</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">Request Approved</p>
+            </div>
+            
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1a1a2e; margin: 0 0 20px; font-size: 24px;">You're In! ✅</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hi ${name},</p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                Great news! Your request to join <strong>${escapeHtml(String(data.projectName || 'the project'))}</strong> has been approved.
+                You've been added as a <strong>${escapeHtml(String(data.role || 'member'))}</strong>.
+              </p>
+              
+              <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; padding: 25px; margin: 25px 0; text-align: center;">
+                <p style="color: white; margin: 0; font-size: 48px;">🎉</p>
+                <p style="color: white; margin: 15px 0 0; font-size: 16px; font-weight: bold;">Welcome to the team!</p>
+              </div>
+              
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${escapeHtml(String(data.projectLink || '#'))}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                  Open Project
+                </a>
+              </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
+                Approved by ${escapeHtml(String(data.approvedBy || 'Project owner'))} • Sent from Aligno
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "access_request_denied":
+      return {
+        subject: `Your request to join ${escapeHtml(String(data.projectName || 'the project'))} was not approved`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Aligno</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 14px;">Request Update</p>
+            </div>
+            
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1a1a2e; margin: 0 0 20px; font-size: 24px;">Request Update</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">Hi ${name},</p>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                Unfortunately, your request to join <strong>${escapeHtml(String(data.projectName || 'the project'))}</strong> was not approved at this time.
+              </p>
+              
+              <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="color: #4a4a4a; margin: 0; font-size: 14px; line-height: 1.6;">
+                  This could be for various reasons. If you believe this was a mistake, please reach out to the project owner directly.
+                </p>
+              </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background: #f8f9fa; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;">
+              <p style="color: #888; font-size: 12px; margin: 0; text-align: center;">
+                Sent from Aligno
+              </p>
+            </div>
           </div>
         `,
       };
