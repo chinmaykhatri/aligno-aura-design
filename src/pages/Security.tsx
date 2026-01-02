@@ -39,6 +39,16 @@ const Security = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Draft Banner */}
+      <div className="bg-amber-500/20 border-b border-amber-500/40">
+        <div className="container mx-auto px-6 py-3 flex items-center justify-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          <span className="text-amber-500 font-medium text-sm">
+            DRAFT - Not for legal use. Please consult a lawyer before publishing.
+          </span>
+        </div>
+      </div>
+
       <div className="container mx-auto px-6 py-12 max-w-4xl">
         <Link to="/">
           <Button variant="ghost" className="mb-8">
