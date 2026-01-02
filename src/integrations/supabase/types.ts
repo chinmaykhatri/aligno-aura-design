@@ -1120,6 +1120,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1139,6 +1163,14 @@ export type Database = {
         Args: { project_id: string; user_id: string }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_project_owner: {
         Args: { project_id: string; user_id: string }
         Returns: boolean
@@ -1170,6 +1202,7 @@ export type Database = {
         | "goal_updated"
         | "goal_completed"
         | "milestone_completed"
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1315,6 +1348,7 @@ export const Constants = {
         "goal_completed",
         "milestone_completed",
       ],
+      app_role: ["admin", "moderator", "user"],
     },
   },
 } as const

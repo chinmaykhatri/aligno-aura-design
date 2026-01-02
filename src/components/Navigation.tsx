@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart, BarChart3, FileText, Users, User, Briefcase } from "lucide-react";
+import { LogOut, LayoutDashboard, FolderKanban, Activity, Calendar, GanttChart, BarChart3, FileText, Users, User, Briefcase, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +10,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useIsAdmin } from "@/hooks/useUserRole";
 
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar", "/gantt", "/executive", "/reports", "/portfolio", "/team-performance", "/my-metrics"].some(route => 
+  const { isAdmin } = useIsAdmin();
+  const isAuthenticatedRoute = ["/dashboard", "/projects", "/activity", "/calendar", "/gantt", "/executive", "/reports", "/portfolio", "/team-performance", "/my-metrics", "/admin"].some(route => 
     location.pathname.startsWith(route)
   );
 
@@ -157,6 +159,15 @@ const Navigation = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
