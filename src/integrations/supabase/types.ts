@@ -381,6 +381,71 @@ export type Database = {
           },
         ]
       }
+      project_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          expires_at: string | null
+          id: string
+          invitation_type: string
+          invite_code: string | null
+          invite_token: string | null
+          max_uses: number | null
+          project_id: string
+          role: string
+          status: string
+          updated_at: string
+          use_count: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_type: string
+          invite_code?: string | null
+          invite_token?: string | null
+          max_uses?: number | null
+          project_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+          use_count?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          invitation_type?: string
+          invite_code?: string | null
+          invite_token?: string | null
+          max_uses?: number | null
+          project_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          use_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string
@@ -1060,6 +1125,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_project_invitation: {
+        Args: { p_invite_code?: string; p_invite_token?: string }
+        Returns: Json
+      }
+      generate_invite_code: { Args: never; Returns: string }
       has_project_access: {
         Args: { project_id: string; user_id: string }
         Returns: boolean

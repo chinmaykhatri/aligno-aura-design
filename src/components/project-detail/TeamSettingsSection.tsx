@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ClientPortalManager } from "@/components/ClientPortalManager";
 import { IntegrationsManager } from "@/components/IntegrationsManager";
+import { InviteMemberDialog } from "@/components/InviteMemberDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ export const TeamSettingsSection = ({
 }: TeamSettingsSectionProps) => {
   const [showIntegrations, setShowIntegrations] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
 
   return (
     <section className="space-y-4">
@@ -65,10 +67,17 @@ export const TeamSettingsSection = ({
               <h3 className="font-semibold text-foreground">Team</h3>
             </div>
             {isOwner && (
-              <Button variant="outline" size="sm" onClick={onAddMember} className="border-cyan-500/30 hover:bg-cyan-500/10">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowInviteDialog(true)} 
+                  className="border-cyan-500/30 hover:bg-cyan-500/10"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Invite
+                </Button>
+              </div>
             )}
           </div>
           
@@ -175,6 +184,13 @@ export const TeamSettingsSection = ({
           </div>
         </div>
       </div>
+
+      {/* Invite Member Dialog */}
+      <InviteMemberDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        projectId={projectId}
+      />
     </section>
   );
 };

@@ -22,6 +22,7 @@ import ClientPortal from "./pages/ClientPortal";
 import TeamPerformance from "./pages/TeamPerformance";
 import MyMetrics from "./pages/MyMetrics";
 import Portfolio from "./pages/Portfolio";
+import JoinProject from "./pages/JoinProject";
 import NotFound from "./pages/NotFound";
 
 const AnimatedRoutes = () => {
@@ -44,6 +45,7 @@ const AnimatedRoutes = () => {
         <Route path="/team-performance" element={<TeamPerformance />} />
         <Route path="/my-metrics" element={<MyMetrics />} />
         <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/join" element={<JoinProject />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
