@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Users, Settings, Crown, UserCog, AlertTriangle } from "lucide-react";
+import { Shield, Users, Settings, Crown, UserCog, AlertTriangle, FolderKanban, Mail, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,15 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin, useAllUsers, useUpdateUserRole, AppRole } from "@/hooks/useUserRole";
+import { useIsAdmin, useUpdateUserRole, AppRole } from "@/hooks/useUserRole";
+import { useAdminUsers, useAdminProjects } from "@/hooks/useAdminData";
 import Navigation from "@/components/Navigation";
 import { format } from "date-fns";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { isAdmin, isLoading: roleLoading } = useIsAdmin();
-  const { data: users, isLoading: usersLoading } = useAllUsers();
+  const { data: users, isLoading: usersLoading } = useAdminUsers();
+  const { data: projects, isLoading: projectsLoading } = useAdminProjects();
   const updateRole = useUpdateUserRole();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -87,11 +90,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'completed':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'archived':
+        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      default:
+        return 'bg-secondary text-secondary-foreground';
+    }
+  };
+
   const stats = {
     totalUsers: users?.length || 0,
     admins: users?.filter(u => u.role === 'admin').length || 0,
     moderators: users?.filter(u => u.role === 'moderator').length || 0,
     regularUsers: users?.filter(u => u.role === 'user').length || 0,
+    totalProjects: projects?.length || 0,
+    activeProjects: projects?.filter(p => p.status === 'active').length || 0,
   };
 
   return (
@@ -105,12 +123,12 @@ const AdminDashboard = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage users, roles, and system settings</p>
+            <p className="text-muted-foreground">Manage users, projects, and system settings</p>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <Card className="bg-card border-border/40">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -158,6 +176,30 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-card border-border/40">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Projects</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.totalProjects}</p>
+                </div>
+                <FolderKanban className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border/40">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Projects</p>
+                  <p className="text-3xl font-bold text-foreground">{stats.activeProjects}</p>
+                </div>
+                <FolderKanban className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
@@ -165,6 +207,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="users" className="data-[state=active]:bg-copper data-[state=active]:text-deep-black">
               <Users className="w-4 h-4 mr-2" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="data-[state=active]:bg-copper data-[state=active]:text-deep-black">
+              <FolderKanban className="w-4 h-4 mr-2" />
+              Projects
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-copper data-[state=active]:text-deep-black">
               <Settings className="w-4 h-4 mr-2" />
@@ -183,8 +229,10 @@ const AdminDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Joined</TableHead>
+                      <TableHead>Last Sign In</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -195,7 +243,7 @@ const AdminDashboard = () => {
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
                               <AvatarFallback className="bg-secondary text-foreground text-xs">
-                                {user.full_name?.charAt(0) || user.user_id.charAt(0).toUpperCase()}
+                                {user.full_name?.charAt(0) || user.email?.charAt(0)?.toUpperCase() || 'U'}
                               </AvatarFallback>
                             </Avatar>
                             <div>
@@ -210,13 +258,24 @@ const AdminDashboard = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="w-3 h-3" />
+                            {user.email || 'No email'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={getRoleBadgeVariant(user.role)} className="flex items-center w-fit">
                             {getRoleIcon(user.role)}
                             {user.role}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(user.created_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {user.last_sign_in_at 
+                            ? format(new Date(user.last_sign_in_at), 'MMM d, yyyy HH:mm')
+                            : 'Never'}
                         </TableCell>
                         <TableCell>
                           <Select
@@ -238,13 +297,106 @@ const AdminDashboard = () => {
                     ))}
                     {(!users || users.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                           No users found
                         </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="projects">
+            <Card className="bg-card border-border/40">
+              <CardHeader>
+                <CardTitle>All Projects</CardTitle>
+                <CardDescription>View all projects across the platform</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {projectsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-copper" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Progress</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {projects?.map((project) => (
+                        <TableRow key={project.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-foreground">{project.name}</p>
+                              {project.description && (
+                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                  {project.description}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-sm text-foreground">
+                                {project.owner_name || 'Unknown'}
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Mail className="w-3 h-3" />
+                                {project.owner_email || 'No email'}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getStatusColor(project.status)}>
+                              {project.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Progress value={project.progress} className="w-16 h-2" />
+                              <span className="text-sm text-muted-foreground">{project.progress}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Users className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{project.member_count}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {format(new Date(project.created_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/projects/${project.id}`)}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(!projects || projects.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                            No projects found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -275,6 +427,7 @@ const AdminDashboard = () => {
                     <li>✓ Client portal access</li>
                     <li>✓ Advanced integrations</li>
                     <li>✓ User management</li>
+                    <li>✓ View all platform projects</li>
                   </ul>
                 </div>
               </CardContent>
