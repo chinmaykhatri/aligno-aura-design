@@ -23,6 +23,9 @@ import TeamPerformance from "./pages/TeamPerformance";
 import MyMetrics from "./pages/MyMetrics";
 import Portfolio from "./pages/Portfolio";
 import JoinProject from "./pages/JoinProject";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 
 const AnimatedRoutes = () => {
@@ -46,6 +49,9 @@ const AnimatedRoutes = () => {
         <Route path="/my-metrics" element={<MyMetrics />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/join" element={<JoinProject />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/security" element={<Security />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
