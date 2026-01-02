@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Navigation from "@/components/Navigation";
 import AIChat from "@/components/AIChat";
 import { ActivityFeed } from "@/components/ActivityFeed";
-import { LogOut, MessageSquare, FolderKanban } from "lucide-react";
+import { JoinProjectDialog } from "@/components/JoinProjectDialog";
+import { LogOut, MessageSquare, FolderKanban, UserPlus } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { ProjectCard } from "@/components/ProjectCard";
 import { analytics } from "@/lib/analytics";
@@ -15,6 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [showChat, setShowChat] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
   const { data: projects } = useProjects();
   
   const recentProjects = projects?.slice(0, 3);
@@ -80,7 +82,7 @@ const Dashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             <Card className="hover:border-copper/30 transition-smooth">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -122,6 +124,27 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            <Card className="hover:border-copper/30 transition-smooth">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-copper" />
+                  Join a Project
+                </CardTitle>
+                <CardDescription>
+                  Enter an invite code to join a team
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowJoinDialog(true)}
+                >
+                  Enter Code
+                </Button>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Recent Projects Section */}
@@ -153,6 +176,7 @@ const Dashboard = () => {
       </main>
 
       <AIChat open={showChat} onOpenChange={setShowChat} />
+      <JoinProjectDialog open={showJoinDialog} onOpenChange={setShowJoinDialog} />
     </div>
   );
 };
